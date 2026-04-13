@@ -63,6 +63,7 @@ export function emptySession() {
     refreshToken: "",
     userId: "",
     email: "",
+    role: "",
   };
 }
 

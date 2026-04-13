@@ -2,6 +2,9 @@ import { createContext, useContext, useMemo } from "react";
 import { normalizeApiBase, useSession } from "./session.jsx";
 
 const ApiContext = createContext(null);
+const DEFAULT_TIMEOUT_MS = 15000;
+const DEFAULT_RETRY_DELAY_MS = 400;
+const RETRYABLE_STATUSES = new Set([408, 425, 429, 502, 503, 504]);
 
 export function ApiProvider({ children }) {
   const { session, setSession, clearSession } = useSession();
@@ -29,29 +32,69 @@ export function buildQuery(params) {
 }
 
 export async function requestJson(url, options = {}) {
+  const timeoutMs = Number(options.timeoutMs || DEFAULT_TIMEOUT_MS);
+  const retryCount = Math.max(0, Number(options.retryCount || 0));
+  const retryDelayMs = Math.max(0, Number(options.retryDelayMs || DEFAULT_RETRY_DELAY_MS));
+
+  let lastError;
+  for (let attempt = 0; attempt <= retryCount; attempt += 1) {
+    try {
+      return await requestJsonOnce(url, { ...options, timeoutMs });
+    } catch (error) {
+      lastError = error;
+      if (attempt >= retryCount || !shouldRetryRequest(error, options.method)) {
+        throw error;
+      }
+      await wait(retryDelayMs * (attempt + 1));
+    }
+  }
+
+  throw lastError;
+}
+
+async function requestJsonOnce(url, options = {}) {
   const headers = { ...(options.headers || {}) };
   const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   if (!isFormData && options.body !== undefined && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
   }
 
-  const response = await fetch(url, {
-    method: options.method || "GET",
-    headers,
-    body: options.body === undefined ? undefined : isFormData ? options.body : JSON.stringify(options.body),
-  });
+  const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timeoutId = controller ? window.setTimeout(() => controller.abort(), Number(options.timeoutMs || DEFAULT_TIMEOUT_MS)) : null;
 
-  const text = await response.text();
-  const payload = text ? safeJsonParse(text) : {};
+  try {
+    const response = await fetch(url, {
+      method: options.method || "GET",
+      headers,
+      body: options.body === undefined ? undefined : isFormData ? options.body : JSON.stringify(options.body),
+      signal: controller?.signal,
+    });
 
-  if (!response.ok) {
-    const error = new Error(normalizeErrorMessage(payload, response.statusText));
-    error.status = response.status;
-    error.payload = payload;
+    const text = await response.text();
+    const payload = text ? safeJsonParse(text) : {};
+
+    if (!response.ok) {
+      const error = new Error(normalizeErrorMessage(payload, response.statusText));
+      error.name = "HttpError";
+      error.status = response.status;
+      error.payload = payload;
+      throw error;
+    }
+
+    return payload;
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      const timeoutError = new Error("Yeu cau qua thoi gian cho phep");
+      timeoutError.name = "TimeoutError";
+      timeoutError.status = 408;
+      throw timeoutError;
+    }
     throw error;
+  } finally {
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId);
+    }
   }
-
-  return payload;
 }
 
 export function createApiClient(session, setSession, clearSession) {
@@ -76,6 +119,7 @@ export function createApiClient(session, setSession, clearSession) {
           const refreshed = await requestJson(`${normalizeApiBase(session.apiBaseUrl)}/auth/refresh`, {
             method: "POST",
             body: { refreshToken: session.refreshToken },
+            timeoutMs: options.timeoutMs,
           });
           const nextSession = {
             ...session,
@@ -83,6 +127,7 @@ export function createApiClient(session, setSession, clearSession) {
             refreshToken: refreshed.refreshToken || session.refreshToken,
             userId: refreshed.userId || session.userId,
             email: refreshed.email || session.email,
+            role: refreshed.role || session.role,
           };
           setSession(nextSession);
           return requestJson(url, {
@@ -102,9 +147,9 @@ export function createApiClient(session, setSession, clearSession) {
   };
 
   return {
-    get(path, query) {
+    get(path, query, options = {}) {
       const queryString = buildQuery(query);
-      return requestWithSession(queryString ? `${path}?${queryString}` : path);
+      return requestWithSession(queryString ? `${path}?${queryString}` : path, { ...options, method: "GET", retryCount: options.retryCount ?? 1 });
     },
     post(path, body, options = {}) {
       return requestWithSession(path, { ...options, method: "POST", body });
@@ -140,4 +185,25 @@ function normalizeErrorMessage(payload, fallback) {
     return payload.raw.trim();
   }
   return fallback || "Request failed";
+}
+
+function shouldRetryRequest(error, method) {
+  const normalizedMethod = String(method || "GET").toUpperCase();
+  if (!["GET", "HEAD", "OPTIONS"].includes(normalizedMethod)) {
+    return false;
+  }
+  if (!error) {
+    return false;
+  }
+  if (error.name === "TimeoutError") {
+    return true;
+  }
+  if (typeof error.status === "number" && RETRYABLE_STATUSES.has(error.status)) {
+    return true;
+  }
+  return false;
+}
+
+function wait(delayMs) {
+  return new Promise((resolve) => window.setTimeout(resolve, delayMs));
 }

@@ -58,7 +58,7 @@ export default function FreshnessReportsPage() {
         }));
       } catch (error) {
         if (!active) return;
-        setState((current) => ({ ...current, loading: false, error: error.message, items: [], pagination: null, selected: [] }));
+        setState((current) => ({ ...current, loading: false, error: describeModerationError(error), items: [], pagination: null, selected: [] }));
       }
     }
 
@@ -83,7 +83,7 @@ export default function FreshnessReportsPage() {
       }));
       toast.success(`Đã cập nhật ${item.reportId} -> ${labelOf(status)}`);
     } catch (error) {
-      setState((current) => ({ ...current, applying: false, error: error.message }));
+      setState((current) => ({ ...current, applying: false, error: describeModerationError(error) }));
     }
   }
 
@@ -107,7 +107,7 @@ export default function FreshnessReportsPage() {
       }));
       toast.success(`Đã duyệt ${updates.length} báo cáo độ tươi`);
     } catch (error) {
-      setState((current) => ({ ...current, applying: false, error: error.message }));
+      setState((current) => ({ ...current, applying: false, error: describeModerationError(error) }));
     }
   }
 
@@ -331,4 +331,14 @@ function DateFilter({ label, value, onChange }) {
       <input className="form-control" type="datetime-local" value={toDatetimeLocalInput(value)} onChange={(event) => onChange(event.target.value)} />
     </div>
   );
+}
+
+function describeModerationError(error) {
+  if (error?.status === 403) {
+    return "Tai khoan hien tai khong co quyen duyet cac muc nay.";
+  }
+  if (error?.name === "TimeoutError") {
+    return "Khong nhan duoc phan hoi tu server trong thoi gian cho phep.";
+  }
+  return error?.message || "Khong the xu ly yeu cau.";
 }

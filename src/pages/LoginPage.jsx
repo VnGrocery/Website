@@ -37,6 +37,7 @@ export default function LoginPage({ session }) {
         refreshToken: response.refreshToken || "",
         userId: response.userId || "",
         email: response.email || form.email,
+        role: response.role || "",
       });
       navigate("/", { replace: true });
     } catch (submitError) {
