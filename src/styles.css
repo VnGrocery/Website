@@ -7,6 +7,10 @@ body {
   background: #f8f9fc;
 }
 
+.break-all {
+  word-break: break-all;
+}
+
 .login-page {
   min-height: 100vh;
   display: flex;
@@ -42,4 +46,18 @@ body {
 
 #wrapper #content-wrapper {
   min-width: 0;
+}
+
+.toast-stack-react {
+  position: fixed;
+  right: 1rem;
+  top: 1rem;
+  width: min(420px, calc(100vw - 2rem));
+  z-index: 1080;
+}
+
+.json-viewer-react {
+  max-height: 420px;
+  overflow: auto;
+  white-space: pre-wrap;
 }
