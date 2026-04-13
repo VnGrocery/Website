@@ -46,14 +46,14 @@ export default function DashboardPage() {
 
   return (
     <>
-      <PageHeader title="Tổng quan" subtitle="Toàn cảnh nhanh về trạng thái hệ thống" />
+      <PageHeader title="Tổng quan" subtitle="Nhìn nhanh tình hình chung của hệ thống" />
       <AlertBanner tone="danger" text={state.error} />
 
       <div className="row">
         <MetricCard color="primary" title="Người dùng" value={state.users.length} hint={`${activeUsers} đang hoạt động`} icon="users" />
-        <MetricCard color="success" title="Cửa hàng" value={state.shops.length} hint={`${pendingShops} chờ duyệt`} icon="store" />
-        <MetricCard color="warning" title="Cảnh báo" value={riskFlags} hint="Lượt kiểm tra rủi ro cao" icon="exclamation-triangle" />
-        <MetricCard color="info" title="Đã neo" value={anchored} hint="Cửa hàng có pledge" icon="link" />
+        <MetricCard color="success" title="Cửa hàng" value={state.shops.length} hint={`${pendingShops} đang chờ duyệt`} icon="store" />
+        <MetricCard color="warning" title="Cần xem lại" value={riskFlags} hint="Có lượt kiểm tra rủi ro cao" icon="exclamation-triangle" />
+        <MetricCard color="info" title="Có cam kết" value={anchored} hint="Cửa hàng đã có dữ liệu đối chiếu" icon="link" />
       </div>
 
       <div className="row">
@@ -72,14 +72,14 @@ export default function DashboardPage() {
           </Card>
         </div>
         <div className="col-lg-6 mb-4">
-          <Card title="Cửa hàng cần theo dõi" loading={state.loading}>
+          <Card title="Cửa hàng cần chú ý" loading={state.loading}>
             <DataTable
-              columns={["Cửa hàng", "Trạng thái", "Độ tin cậy", "Rủi ro"]}
+              columns={["Cửa hàng", "Trạng thái", "Mức tin cậy", "Rủi ro"]}
               rows={state.shops.slice(0, 6).map((shop) => [
                 shop.name,
                 <StatusBadge key={`${shop.shopId}-status`} value={shop.status} />,
-                `${roundNumber(shop.trustSummary?.score)} / ${shop.trustSummary?.grade || "n/a"}`,
-                `${shop.trustSummary?.highRiskCheckCount || 0} alerts`,
+                `${roundNumber(shop.trustSummary?.score)} / ${shop.trustSummary?.grade || "Chưa có"}`,
+                `${shop.trustSummary?.highRiskCheckCount || 0} lượt`,
               ])}
               emptyText="Không tìm thấy cửa hàng"
             />

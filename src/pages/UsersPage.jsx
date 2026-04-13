@@ -43,7 +43,7 @@ export default function UsersPage() {
 
   async function mutateUser(user, path, body, successMessage) {
     const allowed = await confirm({
-      title: "Confirm user change",
+      title: "Xác nhận thay đổi tài khoản",
       message: `Áp dụng thay đổi cho ${user.email}?`,
       confirmLabel: "Áp dụng",
       confirmTone: "primary",
@@ -79,7 +79,7 @@ export default function UsersPage() {
       const result = await api.post(`/admin/users/${user.userId}/keys/${mode}`, { expectedVersion: user.version });
       await loadUsers();
       setState((current) => ({ ...current, busyKey: "", keyResult: result }));
-      toast.success(`Đã ${labelOf(mode).toLowerCase()} khóa`);
+      toast.success(`Đã ${labelOf(mode).toLowerCase()} cho tài khoản`);
     } catch (error) {
       setState((current) => ({ ...current, busyKey: "", error: error.message }));
     }
@@ -87,7 +87,7 @@ export default function UsersPage() {
 
   return (
     <>
-      <PageHeader title="Người dùng" subtitle="Quản lý vai trò, trạng thái và khóa tài khoản" />
+      <PageHeader title="Người dùng" subtitle="Quản lý quyền, trạng thái và khóa bảo mật của tài khoản" />
       <AlertBanner tone="danger" text={state.error} />
 
       <div className="row">
@@ -109,10 +109,10 @@ export default function UsersPage() {
             <Card title="Kết quả thao tác khóa gần nhất">
               <div className="row">
                 <Metric label="Mã người dùng" value={state.keyResult.userId} />
-                <Metric label="Thuật toán" value={state.keyResult.keyAlgorithm} />
-                <Metric label="Đường dẫn Vault" value={state.keyResult.vaultKeyPath} />
+                <Metric label="Loại khóa" value={state.keyResult.keyAlgorithm} />
+                <Metric label="Nơi lưu khóa" value={state.keyResult.vaultKeyPath} />
                 <Metric label="Phiên bản" value={state.keyResult.version} />
-                <Metric label="Public key" value={<div className="text-monospace small break-all">{state.keyResult.publicKey}</div>} wide />
+                <Metric label="Khóa công khai" value={<div className="text-monospace small break-all">{state.keyResult.publicKey}</div>} wide />
               </div>
             </Card>
           </div>
@@ -162,13 +162,13 @@ export default function UsersPage() {
                       <td>
                         <div className="btn-group-vertical btn-block">
                           <button type="button" className="btn btn-outline-primary btn-sm mb-2" onClick={() => runKeyAction(user, "rotate")}>
-                            Xoay khóa
+                            Đổi khóa mới
                           </button>
                           <button type="button" className="btn btn-outline-secondary btn-sm mb-2" onClick={() => runKeyAction(user, "recover")}>
                             Khôi phục khóa
                           </button>
                           <button type="button" className="btn btn-outline-info btn-sm" onClick={() => runKeyAction(user, "backfill")}>
-                            Bổ sung khóa
+                            Tạo khóa còn thiếu
                           </button>
                         </div>
                       </td>
@@ -211,11 +211,11 @@ function InlineSelectAction({ value, options, buttonLabel, busy, onSubmit }) {
     <div className="inline-action-react">
       <select className="form-control form-control-sm mb-2" value={selected} onChange={(event) => setSelected(event.target.value)}>
         {options.map((option) => (
-          <option key={option} value={option}>{option}</option>
+          <option key={option} value={option}>{labelOf(option)}</option>
         ))}
       </select>
       <button type="button" className="btn btn-sm btn-outline-primary btn-block" disabled={busy} onClick={() => onSubmit(selected)}>
-        {busy ? "Saving..." : buttonLabel}
+        {busy ? "Đang lưu..." : buttonLabel}
       </button>
     </div>
   );

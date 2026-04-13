@@ -72,7 +72,7 @@ export default function ShopDetailPage() {
 
   async function moderateShop(status, moderationNote) {
     if (!state.shop?.version) {
-      setState((current) => ({ ...current, error: "Backend chưa trả về phiên bản của shop nên không thể gửi kiểm duyệt an toàn." }));
+      setState((current) => ({ ...current, error: "Hệ thống chưa trả về phiên bản hiện tại của cửa hàng nên chưa thể duyệt an toàn." }));
       return;
     }
     const allowed = await confirm({
@@ -169,7 +169,7 @@ export default function ShopDetailPage() {
   async function runIntegrityAction(pledge, mode) {
     const allowed = await confirm({
       title: `Xác nhận ${labelOf(mode).toLowerCase()}`,
-      message: `${labelOf(mode)} dữ liệu toàn vẹn cho pledge ${pledge.pledgeId}?`,
+      message: `${labelOf(mode)} cho cam kết ${pledge.pledgeId}?`,
       confirmLabel: "Xác nhận",
       confirmTone: mode === "revoke" ? "danger" : "success",
     });
@@ -187,7 +187,7 @@ export default function ShopDetailPage() {
         saving: "",
         pledges: current.pledges.map((item) => (item.pledgeId === updated.pledgeId ? updated : item)),
       }));
-      toast.success(`Đã ${labelOf(mode).toLowerCase()} pledge`);
+      toast.success(`Đã ${labelOf(mode).toLowerCase()} cho cam kết`);
     } catch (error) {
       setState((current) => ({ ...current, saving: "", error: error.message }));
     }
@@ -195,12 +195,12 @@ export default function ShopDetailPage() {
 
   return (
     <>
-      <PageHeader title={state.shop?.name || shopId} subtitle="Kiểm duyệt cửa hàng, sản phẩm, đánh giá và proof" />
+      <PageHeader title={state.shop?.name || shopId} subtitle="Xem và duyệt cửa hàng, sản phẩm, đánh giá và dữ liệu đối chiếu" />
       <AlertBanner tone="danger" text={state.error} />
 
       <div className="row">
         <div className="col-12 mb-4">
-          <Card title="Kiểm duyệt cửa hàng" loading={state.loading}>
+          <Card title="Duyệt cửa hàng" loading={state.loading}>
             {state.shop ? (
               <ActionForm
                 currentValue={state.shop.status}
@@ -209,14 +209,14 @@ export default function ShopDetailPage() {
                 disabled={state.saving === "shop" || !state.shop.version}
                 summary={[
                   ["Chủ sở hữu", state.shop.ownerUserId],
-                  ["Độ tin cậy", `${roundNumber(state.shop.trustSummary?.score)} / ${state.shop.trustSummary?.grade || "n/a"}`],
+                  ["Mức tin cậy", `${roundNumber(state.shop.trustSummary?.score)} / ${state.shop.trustSummary?.grade || "Chưa có"}`],
                   ["Trạng thái hiện tại", labelOf(state.shop.status)],
                   ["Đánh giá", `${roundNumber(state.shop.ratingSummary?.averageRating)} (${state.shop.ratingSummary?.ratingCount || 0})`],
                 ]}
                 onSubmit={({ value, note }) => moderateShop(value, note)}
               />
             ) : null}
-            {!state.shop?.version ? <div className="small text-warning mt-3">Backend chưa trả về `version` của shop. Tạm khóa thao tác kiểm duyệt cửa hàng cho tới khi API bổ sung trường này.</div> : null}
+            {!state.shop?.version ? <div className="small text-warning mt-3">Hệ thống chưa trả về `version` của cửa hàng nên tạm thời khóa thao tác duyệt cửa hàng.</div> : null}
           </Card>
         </div>
 
@@ -280,7 +280,7 @@ export default function ShopDetailPage() {
                         disabled={state.saving === report.reportId}
                         summary={[
                           ["Điểm", roundNumber(report.score)],
-                          ["Danh mục", report.category || "n/a"],
+                          ["Danh mục", report.category || "Chưa có"],
                           ["Độ tin cậy", roundNumber(report.confidence)],
                           ["Cập nhật", formatDateTime(report.updatedAt)],
                         ]}
@@ -297,7 +297,7 @@ export default function ShopDetailPage() {
         </div>
 
         <div className="col-12 mb-4">
-          <Card title="Pledge và proof" loading={state.loading}>
+          <Card title="Cam kết và bằng chứng" loading={state.loading}>
             <div className="row">
               {state.pledges.map((pledge) => (
                 <div className="col-lg-6 mb-4" key={pledge.pledgeId}>
@@ -309,29 +309,29 @@ export default function ShopDetailPage() {
                       </div>
                       <div className="small mb-1">Danh mục: {pledge.category}</div>
                       <div className="small mb-1">Điểm: {roundNumber(pledge.score)}</div>
-                      <div className="small mb-1">Neo chuỗi: {pledge.chainAnchorStatus || "n/a"}</div>
+                      <div className="small mb-1">Đã ghi nhận: {pledge.chainAnchorStatus || "Chưa có"}</div>
                       <div className="small mb-1">Tạo bởi: {pledge.createdByUserId}</div>
-                      <div className="small mb-3">Hash: {shortText(pledge.dataHash)}</div>
+                      <div className="small mb-3">Mã dữ liệu: {shortText(pledge.dataHash)}</div>
                       <div className="btn-group btn-group-sm flex-wrap">
-                        <button type="button" className="btn btn-outline-primary" onClick={() => viewProof(pledge.pledgeId)}>Xem proof</button>
-                        <button type="button" className="btn btn-outline-success" onClick={() => runIntegrityAction(pledge, "reanchor")}>Neo lại</button>
-                        <button type="button" className="btn btn-outline-danger" onClick={() => runIntegrityAction(pledge, "revoke")}>Thu hồi</button>
+                        <button type="button" className="btn btn-outline-primary" onClick={() => viewProof(pledge.pledgeId)}>Xem bằng chứng</button>
+                        <button type="button" className="btn btn-outline-success" onClick={() => runIntegrityAction(pledge, "reanchor")}>Ghi nhận lại</button>
+                        <button type="button" className="btn btn-outline-danger" onClick={() => runIntegrityAction(pledge, "revoke")}>Hủy cam kết</button>
                       </div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-            {!state.loading && !state.pledges.length ? <EmptyState text="Không có lịch sử pledge cho cửa hàng này." /> : null}
+            {!state.loading && !state.pledges.length ? <EmptyState text="Cửa hàng này chưa có lịch sử cam kết." /> : null}
 
             {state.pledgeProof ? (
               <div className="card border-left-success shadow mt-3">
                 <div className="card-body">
                   <h6 className="font-weight-bold text-success text-uppercase mb-2">{state.pledgeProof.proofHeadline}</h6>
                   <p className="mb-3">{state.pledgeProof.proofSummary}</p>
-                  <div className="small mb-1">Trạng thái toàn vẹn: {state.pledgeProof.integrity?.integrityStatus || "n/a"}</div>
-                  <div className="small mb-1">Trạng thái neo chuỗi: {state.pledgeProof.integrity?.chainAnchorStatus || "n/a"}</div>
-                  <div className="small mb-3">Lý do lệch: {state.pledgeProof.integrity?.mismatchReason || "không có"}</div>
+                  <div className="small mb-1">Tình trạng dữ liệu: {state.pledgeProof.integrity?.integrityStatus || "Chưa có"}</div>
+                  <div className="small mb-1">Tình trạng ghi nhận: {state.pledgeProof.integrity?.chainAnchorStatus || "Chưa có"}</div>
+                  <div className="small mb-3">Lý do chưa khớp: {state.pledgeProof.integrity?.mismatchReason || "không có"}</div>
                   <div className="d-flex flex-wrap">
                     {(state.pledgeProof.recommendedActions || []).map((item) => (
                       <span className="badge badge-light border mr-2 mb-2" key={item}>{item}</span>
@@ -380,7 +380,7 @@ function ActionForm({ currentValue, options, buttonLabel, disabled, summary, onS
           </select>
         </div>
         <div className="col-md-7 mb-3">
-          <label>Ghi chú kiểm duyệt</label>
+          <label>Ghi chú xử lý</label>
           <textarea className="form-control" rows="2" value={note} onChange={(event) => setNote(event.target.value)} />
         </div>
         <div className="col-md-2 mb-3">

@@ -40,7 +40,7 @@ export default function VerifyResourcePage() {
 
   return (
     <>
-      <PageHeader title="Xác minh tài nguyên" subtitle="Kiểm tra toàn bộ chuỗi audit của một tài nguyên" />
+      <PageHeader title="Kiểm tra theo mục" subtitle="Kiểm tra toàn bộ lịch sử thay đổi của một mục dữ liệu" />
       <AlertBanner tone="danger" text={state.error} />
 
       <div className="row">
@@ -54,15 +54,15 @@ export default function VerifyResourcePage() {
             >
               <div className="form-row align-items-end">
                 <div className="col-md-4 mb-3">
-                  <label>Loại tài nguyên</label>
+                  <label>Loại mục</label>
                   <input className="form-control" value={resourceType} onChange={(event) => setResourceType(event.target.value)} required />
                 </div>
                 <div className="col-md-4 mb-3">
-                  <label>Mã tài nguyên</label>
+                  <label>Mã mục</label>
                   <input className="form-control" value={resourceId} onChange={(event) => setResourceId(event.target.value)} required />
                 </div>
                 <div className="col-md-2 mb-3">
-                  <button type="submit" className="btn btn-primary btn-block">Xác minh</button>
+                  <button type="submit" className="btn btn-primary btn-block">Kiểm tra</button>
                 </div>
               </div>
             </form>
@@ -70,16 +70,16 @@ export default function VerifyResourcePage() {
         </div>
 
         <div className="col-12">
-          <Card title="Kết quả xác minh" loading={state.loading}>
+          <Card title="Kết quả kiểm tra" loading={state.loading}>
             {state.result ? (
               <>
                 <div className="row mb-3">
                   <div className="col-md-3">
-                    <div className="small text-muted">Loại tài nguyên</div>
+                    <div className="small text-muted">Loại mục</div>
                     <div className="font-weight-bold text-gray-800">{state.result.resourceType}</div>
                   </div>
                   <div className="col-md-3">
-                    <div className="small text-muted">Mã tài nguyên</div>
+                    <div className="small text-muted">Mã mục</div>
                     <div className="font-weight-bold text-gray-800">{state.result.resourceId}</div>
                   </div>
                   <div className="col-md-3">
@@ -87,13 +87,13 @@ export default function VerifyResourcePage() {
                     <div className="font-weight-bold text-gray-800">{state.result.eventCount}</div>
                   </div>
                   <div className="col-md-3">
-                    <div className="small text-muted">Đã xác minh</div>
+                    <div className="small text-muted">Kết quả chung</div>
                     <div><StatusBadge value={String(state.result.verified)} tone={state.result.verified ? "success" : "danger"} /></div>
                   </div>
                 </div>
 
                 <DataTable
-                  columns={["Sự kiện", "Seq", "Hash nội dung", "Chữ ký", "Chuỗi", "Xác minh", "Mở"]}
+                  columns={["Mã thay đổi", "STT", "Nội dung", "Xác nhận", "Liên kết", "Kết quả", "Mở"]}
                   rows={(state.result.events || []).map((event) => [
                     event.eventId,
                     event.sequence,
@@ -108,7 +108,7 @@ export default function VerifyResourcePage() {
                 />
               </>
             ) : (
-              <div className="text-muted">Nhập loại tài nguyên và mã tài nguyên để xác minh.</div>
+              <div className="text-muted">Nhập loại mục và mã mục để kiểm tra.</div>
             )}
           </Card>
         </div>

@@ -40,7 +40,7 @@ export function ConfirmProvider({ children }) {
                   </button>
                 </div>
                 <div className="modal-body">
-                  <p className="mb-0">{dialog.message || "Are you sure you want to continue?"}</p>
+                  <p className="mb-0">{dialog.message || "Bạn có chắc muốn tiếp tục không?"}</p>
                 </div>
                 <div className="modal-footer">
                   <button type="button" className="btn btn-secondary" onClick={() => close(false)}>

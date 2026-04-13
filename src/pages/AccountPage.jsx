@@ -59,11 +59,11 @@ export default function AccountPage() {
           <Card title="Thông tin tài khoản">
             <div className="mb-3">
               <div className="small text-muted">Mã người dùng</div>
-              <div className="font-weight-bold text-gray-800">{profile?.userId || "n/a"}</div>
+              <div className="font-weight-bold text-gray-800">{profile?.userId || "Chưa có"}</div>
             </div>
             <div>
               <div className="small text-muted">Email</div>
-              <div className="font-weight-bold text-gray-800">{profile?.email || "n/a"}</div>
+              <div className="font-weight-bold text-gray-800">{profile?.email || "Chưa có"}</div>
             </div>
           </Card>
         </div>

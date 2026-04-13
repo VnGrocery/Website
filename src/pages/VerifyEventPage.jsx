@@ -33,26 +33,26 @@ export default function VerifyEventPage() {
 
   return (
     <>
-      <PageHeader title={`Xác minh sự kiện ${eventId}`} subtitle="Chi tiết xác thực cho một sự kiện audit" />
+      <PageHeader title={`Kiểm tra thay đổi ${eventId}`} subtitle="Xem chi tiết độ tin cậy của một thay đổi đã ghi nhận" />
       <AlertBanner tone="danger" text={state.error} />
 
       <div className="row">
         <div className="col-12">
-          <Card title="Kết quả xác minh" loading={state.loading}>
+          <Card title="Kết quả kiểm tra" loading={state.loading}>
             {state.result ? (
               <div className="row">
-                <Metric label="Loại tài nguyên" value={state.result.resourceType} />
-                <Metric label="Mã tài nguyên" value={state.result.resourceId} />
-                <Metric label="Sequence" value={state.result.sequence} />
-                <Metric label="Sự kiện trước" value={state.result.previousEventId || "Không có"} />
-                <Metric label="Hash nội dung" value={<StatusBadge value={String(state.result.contentHashValid)} tone={state.result.contentHashValid ? "success" : "danger"} />} />
-                <Metric label="Chữ ký" value={<StatusBadge value={String(state.result.signatureValid)} tone={state.result.signatureValid ? "success" : "danger"} />} />
-                <Metric label="Liên kết chuỗi" value={<StatusBadge value={String(state.result.chainLinkValid)} tone={state.result.chainLinkValid ? "success" : "danger"} />} />
-                <Metric label="Có sự kiện trước" value={<StatusBadge value={String(state.result.previousEventPresent)} tone={state.result.previousEventPresent ? "success" : "danger"} />} />
-                <Metric label="Đã xác minh" value={<StatusBadge value={String(state.result.verified)} tone={state.result.verified ? "success" : "danger"} />} />
+                <Metric label="Loại mục" value={state.result.resourceType} />
+                <Metric label="Mã mục" value={state.result.resourceId} />
+                <Metric label="Số thứ tự" value={state.result.sequence} />
+                <Metric label="Mục trước đó" value={state.result.previousEventId || "Không có"} />
+                <Metric label="Nội dung có khớp" value={<StatusBadge value={String(state.result.contentHashValid)} tone={state.result.contentHashValid ? "success" : "danger"} />} />
+                <Metric label="Dấu xác nhận hợp lệ" value={<StatusBadge value={String(state.result.signatureValid)} tone={state.result.signatureValid ? "success" : "danger"} />} />
+                <Metric label="Liên kết trước sau" value={<StatusBadge value={String(state.result.chainLinkValid)} tone={state.result.chainLinkValid ? "success" : "danger"} />} />
+                <Metric label="Có bản ghi trước" value={<StatusBadge value={String(state.result.previousEventPresent)} tone={state.result.previousEventPresent ? "success" : "danger"} />} />
+                <Metric label="Kết quả chung" value={<StatusBadge value={String(state.result.verified)} tone={state.result.verified ? "success" : "danger"} />} />
               </div>
             ) : (
-              <div className="text-muted">Không có kết quả xác minh.</div>
+              <div className="text-muted">Không có kết quả kiểm tra.</div>
             )}
           </Card>
         </div>

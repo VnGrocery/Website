@@ -70,11 +70,11 @@ export default function EventsPage() {
   return (
     <>
       <PageHeader
-        title="Sự kiện"
-        subtitle="Nhật ký audit và các điểm vào để xác minh"
+        title="Lịch sử thay đổi"
+        subtitle="Xem các thay đổi đã ghi nhận và kiểm tra lại khi cần"
         actions={
           <Link className="btn btn-outline-primary btn-sm" to="/events/verify">
-            Xác minh tài nguyên
+            Kiểm tra theo mục
           </Link>
         }
       />
@@ -90,17 +90,17 @@ export default function EventsPage() {
               }}
             >
               <div className="form-row">
-                <FilterInput label="Loại tài nguyên" value={filters.resourceType} onChange={(value) => setFilters((current) => ({ ...current, resourceType: value }))} />
-                <FilterInput label="Mã tài nguyên" value={filters.resourceId} onChange={(value) => setFilters((current) => ({ ...current, resourceId: value }))} />
+                <FilterInput label="Loại mục" value={filters.resourceType} onChange={(value) => setFilters((current) => ({ ...current, resourceType: value }))} />
+                <FilterInput label="Mã mục" value={filters.resourceId} onChange={(value) => setFilters((current) => ({ ...current, resourceId: value }))} />
                 <FilterInput label="Mã người thực hiện" value={filters.actorUserId} onChange={(value) => setFilters((current) => ({ ...current, actorUserId: value }))} />
                 <FilterInput label="Hành động" value={filters.action} onChange={(value) => setFilters((current) => ({ ...current, action: value }))} />
               </div>
               <div className="form-row">
                 <FilterInput label="Trạng thái" value={filters.status} onChange={(value) => setFilters((current) => ({ ...current, status: value }))} />
-                <FilterInput label="Sequence nhỏ nhất" value={filters.minSequence} onChange={(value) => setFilters((current) => ({ ...current, minSequence: value }))} />
-                <FilterInput label="Sequence lớn nhất" value={filters.maxSequence} onChange={(value) => setFilters((current) => ({ ...current, maxSequence: value }))} />
-                <DateFilter label="Tạo sau" value={filters.createdAfter} onChange={(value) => setFilters((current) => ({ ...current, createdAfter: value }))} />
-                <DateFilter label="Tạo trước" value={filters.createdBefore} onChange={(value) => setFilters((current) => ({ ...current, createdBefore: value }))} />
+                <FilterInput label="Số thứ tự từ" value={filters.minSequence} onChange={(value) => setFilters((current) => ({ ...current, minSequence: value }))} />
+                <FilterInput label="Số thứ tự đến" value={filters.maxSequence} onChange={(value) => setFilters((current) => ({ ...current, maxSequence: value }))} />
+                <DateFilter label="Từ thời điểm" value={filters.createdAfter} onChange={(value) => setFilters((current) => ({ ...current, createdAfter: value }))} />
+                <DateFilter label="Đến thời điểm" value={filters.createdBefore} onChange={(value) => setFilters((current) => ({ ...current, createdBefore: value }))} />
               </div>
               <div className="mt-2">
                 <button type="submit" className="btn btn-primary mr-2">Áp dụng</button>
@@ -113,16 +113,16 @@ export default function EventsPage() {
         </div>
 
         <div className="col-12">
-          <Card title="Nhật ký sự kiện" loading={state.loading}>
+          <Card title="Danh sách thay đổi" loading={state.loading}>
             <div className="table-responsive">
               <table className="table table-bordered">
                 <thead>
                   <tr>
-                    <th>Sự kiện</th>
+                    <th>Mã thay đổi</th>
                     <th>Người thực hiện</th>
                     <th>Hành động</th>
                     <th>Trạng thái</th>
-                    <th>Seq</th>
+                    <th>STT</th>
                     <th>Thời gian tạo</th>
                     <th>Thao tác</th>
                   </tr>
@@ -143,13 +143,13 @@ export default function EventsPage() {
                         <td>
                           <div className="btn-group btn-group-sm flex-wrap">
                             <Link className="btn btn-outline-primary" to={`/events/${event.eventId}/verify`}>
-                              Xác minh sự kiện
+                              Kiểm tra mục này
                             </Link>
                             <Link
                               className="btn btn-outline-secondary"
                               to={`/events/verify?${buildQuery({ resourceType: event.resourceType, resourceId: event.resourceId })}`}
                             >
-                              Xác minh tài nguyên
+                              Kiểm tra theo mục
                             </Link>
                             <button
                               type="button"
@@ -171,11 +171,11 @@ export default function EventsPage() {
                           <td colSpan="7">
                             <div className="row">
                               <div className="col-lg-6 mb-3">
-                                <div className="small text-muted mb-1">Chữ ký</div>
+                                <div className="small text-muted mb-1">Mã xác nhận</div>
                                 <div className="text-monospace small break-all">{event.signature}</div>
                               </div>
                               <div className="col-lg-6 mb-3">
-                                <div className="small text-muted mb-1">SHA256 nội dung</div>
+                                <div className="small text-muted mb-1">Mã kiểm tra nội dung</div>
                                 <div className="text-monospace small break-all">{event.contentSha256}</div>
                               </div>
                             </div>
@@ -187,7 +187,7 @@ export default function EventsPage() {
                   ))}
                 </tbody>
               </table>
-              {!state.loading && !state.items.length ? <EmptyState text="Không có sự kiện phù hợp bộ lọc hiện tại." /> : null}
+              {!state.loading && !state.items.length ? <EmptyState text="Không có thay đổi nào phù hợp với bộ lọc hiện tại." /> : null}
             </div>
             <PaginationBar
               page={Number(filters.page || 1)}
@@ -196,7 +196,7 @@ export default function EventsPage() {
               onNext={() => setSearchParams(serializeFilters({ ...filters, page: String(Number(filters.page) + 1) }))}
               summary={
                 state.pagination
-                  ? `Trang ${state.pagination.page} / ${state.pagination.totalPages}, tổng ${state.pagination.totalItems} sự kiện`
+                  ? `Trang ${state.pagination.page} / ${state.pagination.totalPages}, tổng ${state.pagination.totalItems} mục`
                   : ""
               }
             />

@@ -52,56 +52,56 @@ export default function ToolsPage() {
 
   return (
     <>
-      <PageHeader title="Công cụ toàn vẹn" subtitle="Kiểm duyệt trực tiếp theo ID và phiên bản" />
-      <AlertBanner tone="info" text="API hiện chưa có list buyer checks toàn cục. Màn này xử lý trực tiếp theo ID và expectedVersion." />
+      <PageHeader title="Công cụ xử lý nhanh" subtitle="Xử lý trực tiếp khi đã có mã và phiên bản của dữ liệu" />
+      <AlertBanner tone="info" text="Hệ thống hiện chưa có danh sách chung cho các lượt kiểm tra của khách. Màn này xử lý trực tiếp theo mã và phiên bản mong muốn." />
       <AlertBanner tone="danger" text={error} />
 
       <div className="row">
         <div className="col-lg-6 mb-4">
-          <Card title="Kiểm duyệt lượt kiểm tra của người mua">
+          <Card title="Duyệt kết quả kiểm tra của khách">
             <form onSubmit={submitBuyerCheck}>
               <div className="form-group">
                 <label>Mã lượt kiểm tra</label>
                 <input className="form-control" value={buyerForm.checkId} onChange={(event) => setBuyerForm({ ...buyerForm, checkId: event.target.value })} required />
               </div>
               <div className="form-group">
-                <label>Phiên bản kỳ vọng</label>
+                <label>Phiên bản mong muốn</label>
                 <input className="form-control" type="number" min="1" value={buyerForm.expectedVersion} onChange={(event) => setBuyerForm({ ...buyerForm, expectedVersion: event.target.value })} required />
               </div>
               <div className="form-group">
                 <SelectField label="Trạng thái" value={buyerForm.status} options={buyerCheckStatuses} onChange={(value) => setBuyerForm({ ...buyerForm, status: value })} />
               </div>
               <div className="form-group">
-                <label>Ghi chú kiểm duyệt</label>
+                <label>Ghi chú xử lý</label>
                 <textarea className="form-control" rows="4" value={buyerForm.moderationNote} onChange={(event) => setBuyerForm({ ...buyerForm, moderationNote: event.target.value })} />
               </div>
               <button type="submit" className="btn btn-primary" disabled={busy === "buyer"}>
-                {busy === "buyer" ? "Đang áp dụng..." : "Kiểm duyệt lượt kiểm tra"}
+                {busy === "buyer" ? "Đang áp dụng..." : "Lưu kết quả xử lý"}
               </button>
             </form>
           </Card>
         </div>
 
         <div className="col-lg-6 mb-4">
-          <Card title="Kiểm duyệt báo cáo độ tươi">
+          <Card title="Duyệt báo cáo độ tươi">
             <form onSubmit={submitReport}>
               <div className="form-group">
                 <label>Mã báo cáo</label>
                 <input className="form-control" value={reportForm.reportId} onChange={(event) => setReportForm({ ...reportForm, reportId: event.target.value })} required />
               </div>
               <div className="form-group">
-                <label>Phiên bản kỳ vọng</label>
+                <label>Phiên bản mong muốn</label>
                 <input className="form-control" type="number" min="1" value={reportForm.expectedVersion} onChange={(event) => setReportForm({ ...reportForm, expectedVersion: event.target.value })} required />
               </div>
               <div className="form-group">
                 <SelectField label="Trạng thái" value={reportForm.status} options={reportStatuses} onChange={(value) => setReportForm({ ...reportForm, status: value })} />
               </div>
               <div className="form-group">
-                <label>Ghi chú kiểm duyệt</label>
+                <label>Ghi chú xử lý</label>
                 <textarea className="form-control" rows="4" value={reportForm.moderationNote} onChange={(event) => setReportForm({ ...reportForm, moderationNote: event.target.value })} />
               </div>
               <button type="submit" className="btn btn-primary" disabled={busy === "report"}>
-                {busy === "report" ? "Đang áp dụng..." : "Kiểm duyệt báo cáo"}
+                {busy === "report" ? "Đang áp dụng..." : "Lưu kết quả xử lý"}
               </button>
             </form>
           </Card>

@@ -4,15 +4,15 @@ export function roundNumber(value, digits = 2) {
 
 export function formatDateTime(value) {
   if (!value) {
-    return "n/a";
+    return "Chưa có";
   }
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "n/a" : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? "Chưa có" : date.toLocaleString();
 }
 
 export function shortText(value, prefix = 8, suffix = 6) {
   if (!value) {
-    return "n/a";
+    return "Chưa có";
   }
   return value.length <= prefix + suffix + 3 ? value : `${value.slice(0, prefix)}...${value.slice(-suffix)}`;
 }

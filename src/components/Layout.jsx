@@ -18,9 +18,9 @@ export default function Layout() {
       { to: "/", label: "Tổng quan", icon: "tachometer-alt", end: true },
       { to: "/users", label: "Người dùng", icon: "users-cog" },
       { to: "/shops", label: "Cửa hàng", icon: "store-alt" },
-      { to: "/events", label: "Sự kiện", icon: "stream" },
+      { to: "/events", label: "Lịch sử thay đổi", icon: "stream" },
       { to: "/account", label: "Tài khoản", icon: "user-cog" },
-      { to: "/tools", label: "Công cụ", icon: "shield-alt" },
+      { to: "/tools", label: "Công cụ xử lý", icon: "shield-alt" },
     ],
     [],
   );
@@ -116,7 +116,7 @@ export default function Layout() {
             <div className="mr-auto">
               <div className="text-xs font-weight-bold text-primary text-uppercase mb-1">Bảng điều hành</div>
               <div className="h5 mb-0 text-gray-800">
-                {location.pathname.startsWith("/events") ? "Kiểm tra và xác minh" : "Trang quản trị"}
+                {location.pathname.startsWith("/events") ? "Kiểm tra lịch sử dữ liệu" : "Trang quản trị"}
               </div>
             </div>
             <div className="ml-auto d-flex align-items-center topbar-user-block">

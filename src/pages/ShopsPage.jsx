@@ -57,7 +57,7 @@ export default function ShopsPage() {
 
   return (
     <>
-      <PageHeader title="Cửa hàng" subtitle="Tìm kiếm và theo dõi kiểm duyệt cửa hàng" />
+      <PageHeader title="Cửa hàng" subtitle="Tìm kiếm và theo dõi tình trạng từng cửa hàng" />
       <AlertBanner tone="danger" text={state.error} />
 
       <div className="row">
@@ -105,7 +105,7 @@ export default function ShopsPage() {
                         <StatusBadge value={shop.status} />
                       </div>
                       <div className="small mb-2">Chủ sở hữu: {shop.ownerUserId}</div>
-                      <div className="small mb-2">Độ tin cậy: {roundNumber(shop.trustSummary?.score)} / {shop.trustSummary?.grade || "n/a"}</div>
+                      <div className="small mb-2">Mức tin cậy: {roundNumber(shop.trustSummary?.score)} / {shop.trustSummary?.grade || "Chưa có"}</div>
                       <div className="small mb-3">Kiểm tra rủi ro cao: {shop.trustSummary?.highRiskCheckCount || 0}</div>
                       <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate(`/shops/${shop.shopId}`)}>
                         Mở chi tiết
