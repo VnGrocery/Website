@@ -9,17 +9,17 @@ import { formatDateTime, roundNumber } from "../lib/format.js";
 
 export default function DashboardPage() {
   const api = useApi();
-  const [state, setState] = useState({ loading: true, error: "", users: [], shops: [], buyerEvents: [], reportEvents: [] });
+  const [state, setState] = useState({ loading: true, error: "", users: [], shops: [], highRiskChecks: [], pendingReports: [] });
 
   useEffect(() => {
     let active = true;
     async function load() {
       try {
-        const [usersResponse, shopsResponse, buyerEventsResponse, reportEventsResponse] = await Promise.all([
+        const [usersResponse, shopsResponse, checksResponse, reportsResponse] = await Promise.all([
           api.get("/admin/users"),
           api.get("/admin/shops", { page: 1, pageSize: 8 }),
-          api.get("/events", { resourceType: "buyer_check", page: 1, pageSize: 150 }),
-          api.get("/events", { resourceType: "product_freshness_report", page: 1, pageSize: 150 }),
+          api.get("/admin/buyer-checks", { verdict: "high_risk", status: "completed", page: 1, pageSize: 50 }),
+          api.get("/admin/product-freshness-reports", { status: "active", page: 1, pageSize: 50 }),
         ]);
         if (active) {
           setState({
@@ -27,19 +27,21 @@ export default function DashboardPage() {
             error: "",
             users: usersResponse.items || [],
             shops: shopsResponse.items || [],
-            buyerEvents: buyerEventsResponse.items || [],
-            reportEvents: reportEventsResponse.items || [],
+            highRiskChecks: checksResponse.items || [],
+            pendingReports: reportsResponse.items || [],
           });
         }
       } catch (error) {
         if (active) {
-          setState({ loading: false, error: error.message, users: [], shops: [], buyerEvents: [], reportEvents: [] });
+          setState({ loading: false, error: error.message, users: [], shops: [], highRiskChecks: [], pendingReports: [] });
         }
       }
     }
     load();
+    const timer = setInterval(load, 30000);
     return () => {
       active = false;
+      clearInterval(timer);
     };
   }, [api]);
 
@@ -47,20 +49,8 @@ export default function DashboardPage() {
   const pendingShops = state.shops.filter((item) => item.status === "pending").length;
   const riskFlags = state.shops.filter((item) => (item.trustSummary?.highRiskCheckCount || 0) > 0).length;
   const anchored = state.shops.filter((item) => item.trustSummary?.latestPledgeId).length;
-  const latestBuyerEvents = latestByResource(state.buyerEvents || []);
-  const latestReportEvents = latestByResource(state.reportEvents || []);
-  const highRiskBuyerChecks = latestBuyerEvents.filter((event) => {
-    const payload = safePayload(event.payloadJson);
-    const after = payload.after && typeof payload.after === "object" ? payload.after : payload;
-    return String(after.verdict || "") === "high_risk" && String(after.status || event.status || "") === "completed";
-  });
-  const pendingFreshnessReports = latestReportEvents.filter((event) => {
-    const payload = safePayload(event.payloadJson);
-    const after = payload.after && typeof payload.after === "object" ? payload.after : payload;
-    return String(after.status || event.status || "") === "active";
-  });
-  const dailyCheckTrend = aggregateByDate(highRiskBuyerChecks.map((event) => event.createdAt), 7);
-  const dailyReportTrend = aggregateByDate(pendingFreshnessReports.map((event) => event.createdAt), 7);
+  const dailyCheckTrend = aggregateByDate(state.highRiskChecks.map((event) => event.updatedAt || event.createdAt), 7);
+  const dailyReportTrend = aggregateByDate(state.pendingReports.map((event) => event.updatedAt || event.createdAt), 7);
 
   return (
     <>
@@ -72,8 +62,8 @@ export default function DashboardPage() {
         <MetricCard color="success" title="Cửa hàng" value={state.shops.length} hint={`${pendingShops} đang chờ duyệt`} icon="store" />
         <MetricCard color="warning" title="Cần xem lại" value={riskFlags} hint="Có lượt kiểm tra rủi ro cao" icon="exclamation-triangle" />
         <MetricCard color="info" title="Có cam kết" value={anchored} hint="Cửa hàng đã có dữ liệu đối chiếu" icon="link" />
-        <MetricCard color="danger" title="Buyer check rủi ro cao" value={highRiskBuyerChecks.length} hint="Cần ưu tiên xử lý" icon="shield-alt" />
-        <MetricCard color="secondary" title="Freshness report chờ duyệt" value={pendingFreshnessReports.length} hint="Đang ở trạng thái active" icon="vial" />
+        <MetricCard color="danger" title="Buyer check rủi ro cao" value={state.highRiskChecks.length} hint="Cần ưu tiên xử lý" icon="shield-alt" />
+        <MetricCard color="secondary" title="Freshness report chờ duyệt" value={state.pendingReports.length} hint="Đang ở trạng thái active" icon="vial" />
       </div>
 
       <div className="row">
@@ -158,27 +148,6 @@ function TrendBars({ items }) {
       ))}
     </div>
   );
-}
-
-function latestByResource(events) {
-  const map = new Map();
-  for (const event of events || []) {
-    const key = `${event.resourceType}:${event.resourceId}`;
-    const existing = map.get(key);
-    if (!existing || new Date(event.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
-      map.set(key, event);
-    }
-  }
-  return Array.from(map.values());
-}
-
-function safePayload(value) {
-  if (typeof value !== "string" || !value.trim()) return {};
-  try {
-    return JSON.parse(value);
-  } catch {
-    return {};
-  }
 }
 
 function aggregateByDate(values, days) {

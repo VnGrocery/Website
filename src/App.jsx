@@ -11,6 +11,7 @@ import EventsPage from "./pages/EventsPage.jsx";
 import FreshnessReportsPage from "./pages/FreshnessReportsPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
+import ModerationLogsPage from "./pages/ModerationLogsPage.jsx";
 import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
 import ShopDetailPage from "./pages/ShopDetailPage.jsx";
 import ShopsPage from "./pages/ShopsPage.jsx";
@@ -55,6 +56,7 @@ function AppRoutes() {
         <Route path="shops/:shopId" element={<ShopDetailPage />} />
         <Route path="buyer-checks" element={<BuyerChecksPage />} />
         <Route path="freshness-reports" element={<FreshnessReportsPage />} />
+        <Route path="moderation-logs" element={<ModerationLogsPage />} />
         <Route path="events" element={<EventsPage />} />
         <Route path="events/verify" element={<VerifyResourcePage />} />
         <Route path="events/:eventId/verify" element={<VerifyEventPage />} />

@@ -21,6 +21,7 @@ export default function Layout() {
       { to: "/shops", label: "Cửa hàng", icon: "store-alt" },
       { to: "/buyer-checks", label: "Lượt kiểm tra khách", icon: "clipboard-check", badge: alerts.highRiskChecks },
       { to: "/freshness-reports", label: "Báo cáo độ tươi", icon: "vial", badge: alerts.pendingReports },
+      { to: "/moderation-logs", label: "Lịch sử duyệt", icon: "history" },
       { to: "/events", label: "Lịch sử thay đổi", icon: "stream" },
       { to: "/account", label: "Tài khoản", icon: "user-cog" },
       { to: "/tools", label: "Công cụ xử lý", icon: "shield-alt" },
@@ -66,27 +67,12 @@ export default function Layout() {
     async function loadAlerts() {
       try {
         const [checks, reports] = await Promise.all([
-          api.get("/events", { resourceType: "buyer_check", page: 1, pageSize: 120 }),
-          api.get("/events", { resourceType: "product_freshness_report", page: 1, pageSize: 120 }),
+          api.get("/admin/buyer-checks", { verdict: "high_risk", status: "completed", page: 1, pageSize: 1 }),
+          api.get("/admin/product-freshness-reports", { status: "active", page: 1, pageSize: 1 }),
         ]);
         if (!active) return;
-
-        const latestChecks = latestByResource(checks.items || []);
-        const highRiskChecks = latestChecks.filter((event) => {
-          const payload = safePayload(event.payloadJson);
-          const after = payload.after && typeof payload.after === "object" ? payload.after : payload;
-          const verdict = String(after.verdict || "");
-          const status = String(after.status || event.status || "");
-          return verdict === "high_risk" && status === "completed";
-        }).length;
-
-        const latestReports = latestByResource(reports.items || []);
-        const pendingReports = latestReports.filter((event) => {
-          const payload = safePayload(event.payloadJson);
-          const after = payload.after && typeof payload.after === "object" ? payload.after : payload;
-          const status = String(after.status || event.status || "");
-          return status === "active";
-        }).length;
+        const highRiskChecks = checks.pagination?.totalItems || 0;
+        const pendingReports = reports.pagination?.totalItems || 0;
 
         setAlerts({ highRiskChecks, pendingReports });
       } catch {
@@ -193,25 +179,4 @@ export default function Layout() {
       </div>
     </div>
   );
-}
-
-function latestByResource(events) {
-  const map = new Map();
-  for (const event of events) {
-    const key = `${event.resourceType}:${event.resourceId}`;
-    const prev = map.get(key);
-    if (!prev || new Date(event.createdAt).getTime() > new Date(prev.createdAt).getTime()) {
-      map.set(key, event);
-    }
-  }
-  return Array.from(map.values());
-}
-
-function safePayload(value) {
-  if (typeof value !== "string" || !value.trim()) return {};
-  try {
-    return JSON.parse(value);
-  } catch {
-    return {};
-  }
 }

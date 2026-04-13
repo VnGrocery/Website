@@ -36,32 +36,25 @@ export default function FreshnessReportsPage() {
     let active = true;
     async function load() {
       try {
-        const response = await api.get("/events", {
-          resourceType: "product_freshness_report",
-          resourceId: filters.reportId,
-          actorUserId: filters.reporterUserId,
+        const response = await api.get("/admin/product-freshness-reports", {
+          reportId: filters.reportId,
+          shopId: filters.shopId,
+          productId: filters.productId,
+          reporterUserId: filters.reporterUserId,
           status: filters.status,
           createdAfter: fromDatetimeLocalInput(filters.createdAfter),
           createdBefore: fromDatetimeLocalInput(filters.createdBefore),
           page: Number(filters.page || "1"),
-          pageSize: 100,
+          pageSize: 20,
         });
-
         if (!active) return;
-        const merged = mergeLatestByResource((response.items || []).map(extractReport));
-        const items = merged.filter((item) => {
-          if (filters.shopId && item.shopId !== filters.shopId) return false;
-          if (filters.productId && item.productId !== filters.productId) return false;
-          return true;
-        });
-
         setState((current) => ({
           ...current,
           loading: false,
           error: "",
-          items,
+          items: response.items || [],
           pagination: response.pagination || null,
-          selected: current.selected.filter((id) => items.some((item) => item.reportId === id)),
+          selected: current.selected.filter((id) => (response.items || []).some((item) => item.reportId === id)),
         }));
       } catch (error) {
         if (!active) return;
@@ -71,18 +64,18 @@ export default function FreshnessReportsPage() {
 
     setState((current) => ({ ...current, loading: true, error: "" }));
     load();
+
+    const timer = setInterval(load, 30000);
     return () => {
       active = false;
+      clearInterval(timer);
     };
   }, [api, filters.reportId, filters.reporterUserId, filters.shopId, filters.productId, filters.status, filters.createdAfter, filters.createdBefore, filters.page]);
 
-  async function moderateOne(item, status) {
+  async function moderateOne(item, status, moderationNote) {
     setState((current) => ({ ...current, applying: true, error: "" }));
     try {
-      const updated = await patchReportWithRetry(api, item, {
-        status,
-        moderationNote: "moderated from freshness reports list",
-      });
+      const updated = await patchReportWithRetry(api, item, { status, moderationNote });
       setState((current) => ({
         ...current,
         applying: false,
@@ -97,15 +90,11 @@ export default function FreshnessReportsPage() {
   async function applyBulkModeration() {
     const targets = state.items.filter((item) => state.selected.includes(item.reportId));
     if (!targets.length) return;
-
     setState((current) => ({ ...current, applying: true, error: "" }));
     try {
       const updates = await Promise.all(
         targets.map(async (item) => {
-          const updated = await patchReportWithRetry(api, item, {
-            status: bulk.status,
-            moderationNote: bulk.note,
-          });
+          const updated = await patchReportWithRetry(api, item, { status: bulk.status, moderationNote: bulk.note });
           return { reportId: item.reportId, updated };
         }),
       );
@@ -131,28 +120,7 @@ export default function FreshnessReportsPage() {
     }));
   }
 
-  function exportCurrentAsJson() {
-    downloadJson(`freshness-reports-page-${filters.page || "1"}.json`, state.items);
-  }
-
-  function exportCurrentAsCsv() {
-    downloadCsv(
-      `freshness-reports-page-${filters.page || "1"}.csv`,
-      ["reportId", "shopId", "productId", "reporterUserId", "status", "score", "category", "confidence", "comment", "createdAt"],
-      state.items.map((item) => [
-        item.reportId,
-        item.shopId,
-        item.productId,
-        item.reporterUserId,
-        item.status,
-        item.score,
-        item.category,
-        item.confidence,
-        item.comment,
-        item.createdAt,
-      ]),
-    );
-  }
+  const suggestionNote = suggestReportNoteForStatus(bulk.status);
 
   return (
     <>
@@ -161,8 +129,33 @@ export default function FreshnessReportsPage() {
         subtitle="Danh sách chung các lượt freshness report trên toàn hệ thống"
         actions={
           <div className="btn-group btn-group-sm">
-            <button type="button" className="btn btn-outline-secondary" onClick={exportCurrentAsCsv}>Xuất CSV</button>
-            <button type="button" className="btn btn-outline-secondary" onClick={exportCurrentAsJson}>Xuất JSON</button>
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              onClick={() =>
+                downloadCsv(
+                  `freshness-reports-page-${filters.page || "1"}.csv`,
+                  ["reportId", "shopId", "productId", "reporterUserId", "status", "score", "category", "confidence", "comment", "createdAt"],
+                  state.items.map((item) => [
+                    item.reportId,
+                    item.shopId,
+                    item.productId,
+                    item.reporterUserId,
+                    item.status,
+                    item.score,
+                    item.category,
+                    item.confidence,
+                    item.comment,
+                    item.createdAt,
+                  ]),
+                )
+              }
+            >
+              Xuất CSV
+            </button>
+            <button type="button" className="btn btn-outline-secondary" onClick={() => downloadJson(`freshness-reports-page-${filters.page || "1"}.json`, state.items)}>
+              Xuất JSON
+            </button>
           </div>
         }
       />
@@ -204,13 +197,16 @@ export default function FreshnessReportsPage() {
                   {reportStatuses.map((option) => <option key={option} value={option}>{labelOf(option)}</option>)}
                 </select>
               </div>
-              <div className="col-md-6 mb-3">
+              <div className="col-md-5 mb-3">
                 <label>Ghi chú</label>
-                <input className="form-control" value={bulk.note} onChange={(event) => setBulk((current) => ({ ...current, note: event.target.value }))} placeholder="Ghi chú moderation" />
+                <input className="form-control" value={bulk.note} onChange={(event) => setBulk((current) => ({ ...current, note: event.target.value }))} placeholder={suggestionNote} />
               </div>
-              <div className="col-md-3 mb-3">
+              <div className="col-md-2 mb-3">
+                <button type="button" className="btn btn-outline-info btn-block" onClick={() => setBulk((current) => ({ ...current, note: suggestionNote }))}>Gợi ý note</button>
+              </div>
+              <div className="col-md-2 mb-3">
                 <button type="button" className="btn btn-primary btn-block" disabled={!isAdmin || !state.selected.length || state.applying} onClick={applyBulkModeration}>
-                  {state.applying ? "Đang áp dụng..." : `Áp dụng cho ${state.selected.length} mục`}
+                  {state.applying ? "Đang áp dụng..." : `Áp dụng ${state.selected.length} mục`}
                 </button>
               </div>
             </div>
@@ -227,12 +223,7 @@ export default function FreshnessReportsPage() {
                       <input
                         type="checkbox"
                         checked={state.items.length > 0 && state.selected.length === state.items.length}
-                        onChange={(event) =>
-                          setState((current) => ({
-                            ...current,
-                            selected: event.target.checked ? current.items.map((item) => item.reportId) : [],
-                          }))
-                        }
+                        onChange={(event) => setState((current) => ({ ...current, selected: event.target.checked ? current.items.map((item) => item.reportId) : [] }))}
                       />
                     </th>
                     <th>Mã báo cáo</th>
@@ -247,12 +238,10 @@ export default function FreshnessReportsPage() {
                 <tbody>
                   {state.items.map((item) => (
                     <tr key={item.reportId}>
-                      <td>
-                        <input type="checkbox" checked={state.selected.includes(item.reportId)} onChange={() => toggleSelected(item.reportId)} />
-                      </td>
+                      <td><input type="checkbox" checked={state.selected.includes(item.reportId)} onChange={() => toggleSelected(item.reportId)} /></td>
                       <td>
                         <div className="font-weight-bold">{item.reportId}</div>
-                        <div className="small text-muted">user: {item.reporterUserId || "Chưa có"}</div>
+                        <div className="small text-muted">user: {item.reporterUserId || "-"}</div>
                       </td>
                       <td>
                         {item.shopId ? <Link to={`/shops/${item.shopId}`}>Shop</Link> : "-"}
@@ -264,21 +253,19 @@ export default function FreshnessReportsPage() {
                         <div className="small text-muted">{item.category || "-"}, conf {roundNumber(item.confidence)}</div>
                       </td>
                       <td>{item.comment || "Không có"}</td>
-                      <td>{formatDateTime(item.createdAt)}</td>
+                      <td>{formatDateTime(item.updatedAt || item.createdAt)}</td>
                       <td>
                         <div className="btn-group btn-group-sm flex-wrap">
-                          <button type="button" className="btn btn-outline-warning" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "flagged")}>Gắn cờ</button>
-                          <button type="button" className="btn btn-outline-danger" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "rejected")}>Từ chối</button>
-                          <button type="button" className="btn btn-outline-success" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "active")}>Kích hoạt</button>
+                          <button type="button" className="btn btn-outline-warning" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "flagged", "flagged after admin review")}>Gắn cờ</button>
+                          <button type="button" className="btn btn-outline-danger" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "rejected", "rejected due to invalid or risky report")}>Từ chối</button>
+                          <button type="button" className="btn btn-outline-success" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "active", "re-activated after verification")}>Kích hoạt</button>
                           <Link className="btn btn-outline-primary" to={`/tools?reportId=${encodeURIComponent(item.reportId)}&reportExpectedVersion=${item.version || 1}`}>Duyệt chi tiết</Link>
                         </div>
                       </td>
                     </tr>
                   ))}
                   {!state.loading && !state.items.length ? (
-                    <tr>
-                      <td colSpan="8" className="text-center text-muted py-4">Chưa có báo cáo nào phù hợp bộ lọc.</td>
-                    </tr>
+                    <tr><td colSpan="8" className="text-center text-muted py-4">Chưa có báo cáo nào phù hợp bộ lọc.</td></tr>
                   ) : null}
                 </tbody>
               </table>
@@ -288,11 +275,7 @@ export default function FreshnessReportsPage() {
               hasNext={Boolean(state.pagination && state.pagination.page < state.pagination.totalPages)}
               onPrevious={() => setSearchParams(compactQuery({ ...filters, page: String(Math.max(Number(filters.page || "1") - 1, 1)) }))}
               onNext={() => setSearchParams(compactQuery({ ...filters, page: String(Number(filters.page || "1") + 1) }))}
-              summary={
-                state.pagination
-                  ? `Trang ${state.pagination.page} / ${state.pagination.totalPages}, tổng ${state.pagination.totalItems} events nguồn`
-                  : ""
-              }
+              summary={state.pagination ? `Trang ${state.pagination.page} / ${state.pagination.totalPages}, tổng ${state.pagination.totalItems} báo cáo` : ""}
             />
           </Card>
         </div>
@@ -303,87 +286,29 @@ export default function FreshnessReportsPage() {
 
 async function patchReportWithRetry(api, item, input) {
   try {
-    const updated = await api.patch(`/admin/product-freshness-reports/${item.reportId}/moderation`, {
+    return await api.patch(`/admin/product-freshness-reports/${item.reportId}/moderation`, {
       expectedVersion: Number(item.version || 1),
       status: input.status,
       moderationNote: input.moderationNote || "",
     });
-    return {
-      status: updated.status,
-      version: Number(updated.version || 1),
-      score: Number(updated.score || item.score || 0),
-      category: updated.category || item.category,
-      confidence: Number(updated.confidence || item.confidence || 0),
-      comment: updated.comment || item.comment,
-    };
   } catch (error) {
     if (!String(error.message || "").toLowerCase().includes("version conflict")) {
       throw error;
     }
-
-    const latestVersion = await getLatestResourceVersion(api, "product_freshness_report", item.reportId);
-    const updated = await api.patch(`/admin/product-freshness-reports/${item.reportId}/moderation`, {
-      expectedVersion: Number(latestVersion || item.version || 1),
+    const latest = await api.get("/admin/product-freshness-reports", { reportId: item.reportId, page: 1, pageSize: 1 });
+    const latestVersion = latest.items?.[0]?.version || item.version || 1;
+    return api.patch(`/admin/product-freshness-reports/${item.reportId}/moderation`, {
+      expectedVersion: Number(latestVersion),
       status: input.status,
       moderationNote: input.moderationNote || "",
     });
-    return {
-      status: updated.status,
-      version: Number(updated.version || 1),
-      score: Number(updated.score || item.score || 0),
-      category: updated.category || item.category,
-      confidence: Number(updated.confidence || item.confidence || 0),
-      comment: updated.comment || item.comment,
-    };
   }
 }
 
-async function getLatestResourceVersion(api, resourceType, resourceId) {
-  const response = await api.get("/events", { resourceType, resourceId, page: 1, pageSize: 1 });
-  const latest = response.items?.[0];
-  if (!latest) return 1;
-  const payload = parseMaybeJson(latest.payloadJson);
-  const after = payload?.after && typeof payload.after === "object" ? payload.after : payload;
-  return Number(after?.version || latest.resourceVersion || 1);
-}
-
-function mergeLatestByResource(items) {
-  const map = new Map();
-  for (const item of items) {
-    const existing = map.get(item.reportId);
-    if (!existing || new Date(item.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
-      map.set(item.reportId, item);
-    }
-  }
-  return Array.from(map.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-}
-
-function extractReport(event) {
-  const payload = parseMaybeJson(event.payloadJson);
-  const after = payload && typeof payload === "object" && payload.after && typeof payload.after === "object" ? payload.after : payload;
-  const data = after && typeof after === "object" ? after : {};
-  return {
-    reportId: String(data.reportId || event.resourceId || ""),
-    shopId: String(data.shopId || ""),
-    productId: String(data.productId || ""),
-    reporterUserId: String(data.reporterUserId || event.actorUserId || ""),
-    status: String(data.status || event.status || "active"),
-    version: Number(data.version || event.resourceVersion || 1),
-    score: Number(data.score || 0),
-    category: String(data.category || ""),
-    confidence: Number(data.confidence || 0),
-    comment: String(data.comment || ""),
-    createdAt: data.updatedAt || data.createdAt || event.createdAt,
-  };
-}
-
-function parseMaybeJson(value) {
-  if (typeof value !== "string" || !value.trim()) return {};
-  try {
-    return JSON.parse(value);
-  } catch {
-    return {};
-  }
+function suggestReportNoteForStatus(status) {
+  if (status === "flagged") return "flagged after admin review";
+  if (status === "rejected") return "rejected due to invalid or risky report";
+  return "re-activated after verification";
 }
 
 function compactQuery(input) {

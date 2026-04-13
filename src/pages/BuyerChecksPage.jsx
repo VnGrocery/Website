@@ -37,33 +37,27 @@ export default function BuyerChecksPage() {
     let active = true;
     async function load() {
       try {
-        const response = await api.get("/events", {
-          resourceType: "buyer_check",
-          resourceId: filters.checkId,
-          actorUserId: filters.buyerUserId,
+        const response = await api.get("/admin/buyer-checks", {
+          checkId: filters.checkId,
+          shopId: filters.shopId,
+          productId: filters.productId,
+          buyerUserId: filters.buyerUserId,
           status: filters.status,
+          verdict: filters.verdict,
           createdAfter: fromDatetimeLocalInput(filters.createdAfter),
           createdBefore: fromDatetimeLocalInput(filters.createdBefore),
           page: Number(filters.page || "1"),
-          pageSize: 100,
+          pageSize: 20,
         });
 
         if (!active) return;
-        const merged = mergeLatestByResource((response.items || []).map(extractBuyerCheck));
-        const items = merged.filter((item) => {
-          if (filters.shopId && item.shopId !== filters.shopId) return false;
-          if (filters.productId && item.productId !== filters.productId) return false;
-          if (filters.verdict && item.verdict !== filters.verdict) return false;
-          return true;
-        });
-
         setState((current) => ({
           ...current,
           loading: false,
           error: "",
-          items,
+          items: response.items || [],
           pagination: response.pagination || null,
-          selected: current.selected.filter((id) => items.some((item) => item.checkId === id)),
+          selected: current.selected.filter((id) => (response.items || []).some((item) => item.checkId === id)),
         }));
       } catch (error) {
         if (!active) return;
@@ -73,18 +67,18 @@ export default function BuyerChecksPage() {
 
     setState((current) => ({ ...current, loading: true, error: "" }));
     load();
+
+    const timer = setInterval(load, 30000);
     return () => {
       active = false;
+      clearInterval(timer);
     };
-  }, [api, filters.checkId, filters.buyerUserId, filters.shopId, filters.productId, filters.status, filters.verdict, filters.createdAfter, filters.createdBefore, filters.page]);
+  }, [api, filters.checkId, filters.shopId, filters.productId, filters.buyerUserId, filters.status, filters.verdict, filters.createdAfter, filters.createdBefore, filters.page]);
 
-  async function moderateOne(item, status) {
+  async function moderateOne(item, status, moderationNote) {
     setState((current) => ({ ...current, applying: true, error: "" }));
     try {
-      const updated = await patchBuyerCheckWithRetry(api, item, {
-        status,
-        moderationNote: "moderated from buyer checks list",
-      });
+      const updated = await patchBuyerCheckWithRetry(api, item, { status, moderationNote });
       setState((current) => ({
         ...current,
         applying: false,
@@ -98,9 +92,8 @@ export default function BuyerChecksPage() {
 
   async function applyBulkModeration() {
     const targets = state.items.filter((item) => state.selected.includes(item.checkId));
-    if (!targets.length) {
-      return;
-    }
+    if (!targets.length) return;
+
     setState((current) => ({ ...current, applying: true, error: "" }));
     try {
       const updates = await Promise.all(
@@ -134,30 +127,7 @@ export default function BuyerChecksPage() {
     }));
   }
 
-  function exportCurrentAsJson() {
-    downloadJson(`buyer-checks-page-${filters.page || "1"}.json`, state.items);
-  }
-
-  function exportCurrentAsCsv() {
-    downloadCsv(
-      `buyer-checks-page-${filters.page || "1"}.csv`,
-      ["checkId", "shopId", "productId", "buyerUserId", "status", "verdict", "trusted", "actualScore", "pledgedScore", "scoreDeltaAbs", "reasons", "createdAt"],
-      state.items.map((item) => [
-        item.checkId,
-        item.shopId,
-        item.productId,
-        item.buyerUserId,
-        item.status,
-        item.verdict,
-        item.trusted,
-        item.actualScore,
-        item.pledgedScore,
-        item.scoreDeltaAbs,
-        (item.reasons || []).join("|"),
-        item.createdAt,
-      ]),
-    );
-  }
+  const suggestionNote = suggestBuyerNoteForStatus(bulk.status);
 
   return (
     <>
@@ -166,8 +136,35 @@ export default function BuyerChecksPage() {
         subtitle="Danh sách chung các lượt buyer check đã ghi nhận trên toàn hệ thống"
         actions={
           <div className="btn-group btn-group-sm">
-            <button type="button" className="btn btn-outline-secondary" onClick={exportCurrentAsCsv}>Xuất CSV</button>
-            <button type="button" className="btn btn-outline-secondary" onClick={exportCurrentAsJson}>Xuất JSON</button>
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              onClick={() =>
+                downloadCsv(
+                  `buyer-checks-page-${filters.page || "1"}.csv`,
+                  ["checkId", "shopId", "productId", "buyerUserId", "status", "verdict", "trusted", "actualScore", "pledgedScore", "scoreDeltaAbs", "reasons", "createdAt"],
+                  state.items.map((item) => [
+                    item.checkId,
+                    item.shopId,
+                    item.productId,
+                    item.buyerUserId,
+                    item.status,
+                    item.verdict,
+                    item.trusted,
+                    item.actualScore,
+                    item.pledgedScore,
+                    item.scoreDeltaAbs,
+                    (item.reasons || []).join("|"),
+                    item.createdAt,
+                  ]),
+                )
+              }
+            >
+              Xuất CSV
+            </button>
+            <button type="button" className="btn btn-outline-secondary" onClick={() => downloadJson(`buyer-checks-page-${filters.page || "1"}.json`, state.items)}>
+              Xuất JSON
+            </button>
           </div>
         }
       />
@@ -219,13 +216,16 @@ export default function BuyerChecksPage() {
                   {buyerCheckStatuses.map((option) => <option key={option} value={option}>{labelOf(option)}</option>)}
                 </select>
               </div>
-              <div className="col-md-6 mb-3">
+              <div className="col-md-5 mb-3">
                 <label>Ghi chú</label>
-                <input className="form-control" value={bulk.note} onChange={(event) => setBulk((current) => ({ ...current, note: event.target.value }))} placeholder="Ghi chú moderation" />
+                <input className="form-control" value={bulk.note} onChange={(event) => setBulk((current) => ({ ...current, note: event.target.value }))} placeholder={suggestionNote} />
               </div>
-              <div className="col-md-3 mb-3">
+              <div className="col-md-2 mb-3">
+                <button type="button" className="btn btn-outline-info btn-block" onClick={() => setBulk((current) => ({ ...current, note: suggestionNote }))}>Gợi ý note</button>
+              </div>
+              <div className="col-md-2 mb-3">
                 <button type="button" className="btn btn-primary btn-block" disabled={!isAdmin || !state.selected.length || state.applying} onClick={applyBulkModeration}>
-                  {state.applying ? "Đang áp dụng..." : `Áp dụng cho ${state.selected.length} mục`}
+                  {state.applying ? "Đang áp dụng..." : `Áp dụng ${state.selected.length} mục`}
                 </button>
               </div>
             </div>
@@ -242,12 +242,7 @@ export default function BuyerChecksPage() {
                       <input
                         type="checkbox"
                         checked={state.items.length > 0 && state.selected.length === state.items.length}
-                        onChange={(event) =>
-                          setState((current) => ({
-                            ...current,
-                            selected: event.target.checked ? current.items.map((item) => item.checkId) : [],
-                          }))
-                        }
+                        onChange={(event) => setState((current) => ({ ...current, selected: event.target.checked ? current.items.map((item) => item.checkId) : [] }))}
                       />
                     </th>
                     <th>Mã check</th>
@@ -262,48 +257,38 @@ export default function BuyerChecksPage() {
                 <tbody>
                   {state.items.map((item) => (
                     <tr key={item.checkId}>
-                      <td>
-                        <input type="checkbox" checked={state.selected.includes(item.checkId)} onChange={() => toggleSelected(item.checkId)} />
-                      </td>
+                      <td><input type="checkbox" checked={state.selected.includes(item.checkId)} onChange={() => toggleSelected(item.checkId)} /></td>
                       <td>
                         <div className="font-weight-bold">{item.checkId}</div>
-                        <div className="small text-muted">buyer: {item.buyerUserId || "Chưa có"}</div>
+                        <div className="small text-muted">buyer: {item.buyerUserId || "-"}</div>
                       </td>
                       <td>
                         {item.shopId ? <Link to={`/shops/${item.shopId}`}>Shop</Link> : "-"}
+                        {item.pledgeId && item.shopId ? <div className="small"><Link to={`/shops/${item.shopId}?focusPledgeId=${encodeURIComponent(item.pledgeId)}`}>Proof</Link></div> : null}
                         <div className="small text-muted">product: {item.productId || "-"}</div>
-                        <div className="small text-muted">pledge: {item.pledgeId || "-"}</div>
                       </td>
                       <td>
                         <StatusBadge value={item.status || "completed"} />
                         <div className="small mt-1">{labelVerdict(item.verdict, item.trusted)}</div>
                       </td>
                       <td>
-                        {item.hasPledge ? (
-                          <>
-                            {roundNumber(item.actualScore)} / {roundNumber(item.pledgedScore)}
-                            <div className="small text-muted">Δ {roundNumber(item.scoreDeltaAbs)}</div>
-                          </>
-                        ) : (
-                          <>{roundNumber(item.actualScore)} <span className="small text-muted">(không pledge)</span></>
-                        )}
+                        {item.pledgeId ? `${roundNumber(item.actualScore)} / ${roundNumber(item.pledgedScore)}` : roundNumber(item.actualScore)}
+                        <div className="small text-muted">Δ {roundNumber(item.scoreDeltaAbs)}</div>
                       </td>
                       <td>{(item.reasons || []).join(", ") || "Không có"}</td>
-                      <td>{formatDateTime(item.createdAt)}</td>
+                      <td>{formatDateTime(item.updatedAt || item.createdAt)}</td>
                       <td>
                         <div className="btn-group btn-group-sm flex-wrap">
-                          <button type="button" className="btn btn-outline-warning" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "flagged")}>Gắn cờ</button>
-                          <button type="button" className="btn btn-outline-danger" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "rejected")}>Từ chối</button>
-                          <button type="button" className="btn btn-outline-success" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "completed")}>Hoàn tất</button>
+                          <button type="button" className="btn btn-outline-warning" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "flagged", "flagged due to risk signals")}>Gắn cờ</button>
+                          <button type="button" className="btn btn-outline-danger" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "rejected", "rejected after moderation review")}>Từ chối</button>
+                          <button type="button" className="btn btn-outline-success" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "completed", "confirmed after admin review")}>Hoàn tất</button>
                           <Link className="btn btn-outline-primary" to={`/tools?buyerCheckId=${encodeURIComponent(item.checkId)}&expectedVersion=${item.version || 1}`}>Duyệt chi tiết</Link>
                         </div>
                       </td>
                     </tr>
                   ))}
                   {!state.loading && !state.items.length ? (
-                    <tr>
-                      <td colSpan="8" className="text-center text-muted py-4">Chưa có lượt kiểm tra nào phù hợp bộ lọc.</td>
-                    </tr>
+                    <tr><td colSpan="8" className="text-center text-muted py-4">Chưa có lượt kiểm tra nào phù hợp bộ lọc.</td></tr>
                   ) : null}
                 </tbody>
               </table>
@@ -313,11 +298,7 @@ export default function BuyerChecksPage() {
               hasNext={Boolean(state.pagination && state.pagination.page < state.pagination.totalPages)}
               onPrevious={() => setSearchParams(compactQuery({ ...filters, page: String(Math.max(Number(filters.page || "1") - 1, 1)) }))}
               onNext={() => setSearchParams(compactQuery({ ...filters, page: String(Number(filters.page || "1") + 1) }))}
-              summary={
-                state.pagination
-                  ? `Trang ${state.pagination.page} / ${state.pagination.totalPages}, tổng ${state.pagination.totalItems} events nguồn`
-                  : ""
-              }
+              summary={state.pagination ? `Trang ${state.pagination.page} / ${state.pagination.totalPages}, tổng ${state.pagination.totalItems} lượt` : ""}
             />
           </Card>
         </div>
@@ -328,92 +309,22 @@ export default function BuyerChecksPage() {
 
 async function patchBuyerCheckWithRetry(api, item, input) {
   try {
-    const updated = await api.patch(`/admin/buyer-checks/${item.checkId}/moderation`, {
+    return await api.patch(`/admin/buyer-checks/${item.checkId}/moderation`, {
       expectedVersion: Number(item.version || 1),
       status: input.status,
       moderationNote: input.moderationNote || "",
     });
-    return normalizePatchedBuyerCheck(updated);
   } catch (error) {
     if (!String(error.message || "").toLowerCase().includes("version conflict")) {
       throw error;
     }
-
-    const latestVersion = await getLatestResourceVersion(api, "buyer_check", item.checkId);
-    const updated = await api.patch(`/admin/buyer-checks/${item.checkId}/moderation`, {
-      expectedVersion: Number(latestVersion || item.version || 1),
+    const latest = await api.get("/admin/buyer-checks", { checkId: item.checkId, page: 1, pageSize: 1 });
+    const latestVersion = latest.items?.[0]?.version || item.version || 1;
+    return api.patch(`/admin/buyer-checks/${item.checkId}/moderation`, {
+      expectedVersion: Number(latestVersion),
       status: input.status,
       moderationNote: input.moderationNote || "",
     });
-    return normalizePatchedBuyerCheck(updated);
-  }
-}
-
-function normalizePatchedBuyerCheck(updated) {
-  return {
-    status: updated.status,
-    version: Number(updated.version || 1),
-    verdict: updated.verdict,
-    trusted: Boolean(updated.trusted),
-    pledgedScore: Number(updated.pledgedScore || 0),
-    actualScore: Number(updated.actualScore || 0),
-    scoreDeltaAbs: Number(updated.scoreDeltaAbs || 0),
-    reasons: Array.isArray(updated.reasons) ? updated.reasons : [],
-  };
-}
-
-async function getLatestResourceVersion(api, resourceType, resourceId) {
-  const response = await api.get("/events", { resourceType, resourceId, page: 1, pageSize: 1 });
-  const latest = response.items?.[0];
-  if (!latest) return 1;
-  const payload = parseMaybeJson(latest.payloadJson);
-  const after = payload?.after && typeof payload.after === "object" ? payload.after : payload;
-  return Number(after?.version || latest.resourceVersion || 1);
-}
-
-function mergeLatestByResource(items) {
-  const map = new Map();
-  for (const item of items) {
-    const existing = map.get(item.checkId);
-    if (!existing || new Date(item.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
-      map.set(item.checkId, item);
-    }
-  }
-  return Array.from(map.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-}
-
-function extractBuyerCheck(event) {
-  const payload = parseMaybeJson(event.payloadJson);
-  const after = payload && typeof payload === "object" && payload.after && typeof payload.after === "object" ? payload.after : payload;
-  const data = after && typeof after === "object" ? after : {};
-
-  return {
-    checkId: String(data.checkId || event.resourceId || ""),
-    shopId: String(data.shopId || ""),
-    productId: String(data.productId || ""),
-    pledgeId: String(data.pledgeId || ""),
-    buyerUserId: String(data.buyerUserId || event.actorUserId || ""),
-    status: String(data.status || event.status || "completed"),
-    version: Number(data.version || event.resourceVersion || 1),
-    verdict: String(data.verdict || ""),
-    trusted: Boolean(data.trusted),
-    hasPledge: Boolean(data.pledgeId),
-    pledgedScore: Number(data.pledgedScore || 0),
-    actualScore: Number(data.actualScore || 0),
-    scoreDeltaAbs: Number(data.scoreDeltaAbs || 0),
-    reasons: Array.isArray(data.reasons) ? data.reasons : [],
-    createdAt: data.updatedAt || data.createdAt || event.createdAt,
-  };
-}
-
-function parseMaybeJson(value) {
-  if (typeof value !== "string" || !value.trim()) {
-    return {};
-  }
-  try {
-    return JSON.parse(value);
-  } catch {
-    return {};
   }
 }
 
@@ -427,6 +338,12 @@ function labelVerdict(verdict, trusted) {
   if (verdict === "warning") return "Cần chú ý";
   if (verdict === "no_pledge") return "Không có cam kết đối chiếu";
   return verdict || "Chưa có";
+}
+
+function suggestBuyerNoteForStatus(status) {
+  if (status === "flagged") return "flagged due to risk signals";
+  if (status === "rejected") return "rejected after moderation review";
+  return "confirmed after admin review";
 }
 
 function FilterInput({ label, value, onChange }) {

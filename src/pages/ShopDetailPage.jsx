@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useOutletContext, useParams } from "react-router-dom";
+import { useOutletContext, useParams, useSearchParams } from "react-router-dom";
 import AlertBanner from "../components/AlertBanner.jsx";
 import Card from "../components/Card.jsx";
 import DataTable from "../components/DataTable.jsx";
@@ -20,6 +20,7 @@ export default function ShopDetailPage() {
   const { me } = useOutletContext() || {};
   const isAdmin = String(me?.role || "").toLowerCase() === "admin";
   const { shopId = "" } = useParams();
+  const [searchParams] = useSearchParams();
   const [state, setState] = useState({
     loading: true,
     error: "",
@@ -72,6 +73,25 @@ export default function ShopDetailPage() {
   useEffect(() => {
     loadShopDetail();
   }, [shopId]);
+
+  const focusPledgeId = searchParams.get("focusPledgeId") || "";
+
+  useEffect(() => {
+    if (!focusPledgeId) {
+      return;
+    }
+    if (!state.pledges.length) {
+      return;
+    }
+    const exists = state.pledges.some((item) => item.pledgeId === focusPledgeId);
+    if (!exists) {
+      return;
+    }
+    if (state.pledgeProof?.pledgeId === focusPledgeId) {
+      return;
+    }
+    viewProof(focusPledgeId);
+  }, [focusPledgeId, state.pledges, state.pledgeProof?.pledgeId]);
 
   async function moderateShop(status, moderationNote) {
     if (!state.shop?.version) {

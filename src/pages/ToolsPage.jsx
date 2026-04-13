@@ -180,21 +180,15 @@ async function patchReportWithRetry(api, reportForm) {
 }
 
 async function getLatestResourceVersion(api, resourceType, resourceId) {
-  const response = await api.get("/events", { resourceType, resourceId, page: 1, pageSize: 1 });
-  const latest = response.items?.[0];
-  if (!latest) return 1;
-  const payload = safeParse(latest.payloadJson);
-  const after = payload.after && typeof payload.after === "object" ? payload.after : payload;
-  return Number(after.version || latest.resourceVersion || 1);
-}
-
-function safeParse(value) {
-  if (typeof value !== "string" || !value.trim()) return {};
-  try {
-    return JSON.parse(value);
-  } catch {
-    return {};
+  if (resourceType === "buyer_check") {
+    const response = await api.get("/admin/buyer-checks", { checkId: resourceId, page: 1, pageSize: 1 });
+    return Number(response.items?.[0]?.version || 1);
   }
+  if (resourceType === "product_freshness_report") {
+    const response = await api.get("/admin/product-freshness-reports", { reportId: resourceId, page: 1, pageSize: 1 });
+    return Number(response.items?.[0]?.version || 1);
+  }
+  return 1;
 }
 
 function SelectField({ label, value, options, onChange }) {
