@@ -8,6 +8,7 @@ import PaginationBar from "../components/PaginationBar.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { useApi } from "../lib/api.jsx";
 import { labelOf, shopStatuses } from "../lib/constants.js";
+import { downloadCsv, downloadJson } from "../lib/export.js";
 import { roundNumber } from "../lib/format.js";
 
 export default function ShopsPage() {
@@ -57,7 +58,29 @@ export default function ShopsPage() {
 
   return (
     <>
-      <PageHeader title="Cửa hàng" subtitle="Tìm kiếm và theo dõi tình trạng từng cửa hàng" />
+      <PageHeader
+        title="Cửa hàng"
+        subtitle="Tìm kiếm và theo dõi tình trạng từng cửa hàng"
+        actions={
+          <div className="btn-group btn-group-sm">
+            <button type="button" className="btn btn-outline-secondary" onClick={() => downloadCsv(
+              `shops-page-${state.page}.csv`,
+              ["shopId", "name", "address", "ownerUserId", "status", "trustScore", "trustGrade", "highRiskCheckCount"],
+              state.items.map((shop) => [
+                shop.shopId,
+                shop.name,
+                shop.address,
+                shop.ownerUserId,
+                shop.status,
+                shop.trustSummary?.score ?? "",
+                shop.trustSummary?.grade ?? "",
+                shop.trustSummary?.highRiskCheckCount ?? 0,
+              ]),
+            )}>Xuất CSV</button>
+            <button type="button" className="btn btn-outline-secondary" onClick={() => downloadJson(`shops-page-${state.page}.json`, state.items)}>Xuất JSON</button>
+          </div>
+        }
+      />
       <AlertBanner tone="danger" text={state.error} />
 
       <div className="row">

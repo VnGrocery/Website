@@ -8,6 +8,7 @@ import PageHeader from "../components/PageHeader.jsx";
 import PaginationBar from "../components/PaginationBar.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { buildQuery, useApi } from "../lib/api.jsx";
+import { downloadCsv, downloadJson } from "../lib/export.js";
 import { formatDateTime, fromDatetimeLocalInput, toDatetimeLocalInput } from "../lib/format.js";
 
 const defaultFilters = {
@@ -73,9 +74,36 @@ export default function EventsPage() {
         title="Lịch sử thay đổi"
         subtitle="Xem các thay đổi đã ghi nhận và kiểm tra lại khi cần"
         actions={
-          <Link className="btn btn-outline-primary btn-sm" to="/events/verify">
-            Kiểm tra theo mục
-          </Link>
+          <div className="btn-group btn-group-sm">
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              onClick={() =>
+                downloadCsv(
+                  `events-page-${filters.page}.csv`,
+                  ["eventId", "resourceType", "resourceId", "actorUserId", "action", "status", "sequence", "createdAt"],
+                  state.items.map((event) => [
+                    event.eventId,
+                    event.resourceType,
+                    event.resourceId,
+                    event.actorUserId,
+                    event.action,
+                    event.status,
+                    event.sequence,
+                    event.createdAt,
+                  ]),
+                )
+              }
+            >
+              Xuất CSV
+            </button>
+            <button type="button" className="btn btn-outline-secondary" onClick={() => downloadJson(`events-page-${filters.page}.json`, state.items)}>
+              Xuất JSON
+            </button>
+            <Link className="btn btn-outline-primary" to="/events/verify">
+              Kiểm tra theo mục
+            </Link>
+          </div>
         }
       />
       <AlertBanner tone="danger" text={state.error} />

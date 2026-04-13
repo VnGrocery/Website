@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
 import AlertBanner from "../components/AlertBanner.jsx";
 import Card from "../components/Card.jsx";
 import DataTable from "../components/DataTable.jsx";
@@ -17,6 +17,8 @@ export default function ShopDetailPage() {
   const api = useApi();
   const toast = useToast();
   const confirm = useConfirm();
+  const { me } = useOutletContext() || {};
+  const isAdmin = String(me?.role || "").toLowerCase() === "admin";
   const { shopId = "" } = useParams();
   const [state, setState] = useState({
     loading: true,
@@ -197,6 +199,7 @@ export default function ShopDetailPage() {
   return (
     <>
       <PageHeader title={state.shop?.name || shopId} subtitle="Xem và duyệt cửa hàng, sản phẩm, đánh giá và dữ liệu đối chiếu" />
+      {!isAdmin ? <AlertBanner tone="info" text="Tài khoản hiện tại chỉ có quyền xem, không có quyền duyệt." /> : null}
       <AlertBanner tone="danger" text={state.error} />
 
       <div className="row">
@@ -207,7 +210,7 @@ export default function ShopDetailPage() {
                 currentValue={state.shop.status}
                 options={shopStatuses}
                 buttonLabel={state.saving === "shop" ? "Đang lưu..." : "Áp dụng kiểm duyệt"}
-                disabled={state.saving === "shop" || !state.shop.version}
+                disabled={!isAdmin || state.saving === "shop" || !state.shop.version}
                 summary={[
                   ["Chủ sở hữu", state.shop.ownerUserId],
                   ["Mức tin cậy", `${roundNumber(state.shop.trustSummary?.score)} / ${state.shop.trustSummary?.grade || "Chưa có"}`],
@@ -253,7 +256,7 @@ export default function ShopDetailPage() {
                     currentValue={product.status}
                     options={productStatuses}
                     buttonLabel={state.saving === product.productId ? "Đang lưu..." : "Áp dụng kiểm duyệt sản phẩm"}
-                    disabled={state.saving === product.productId}
+                    disabled={!isAdmin || state.saving === product.productId}
                     summary={[
                       ["Độ tươi", roundNumber(product.freshnessScore)],
                       ["Giá", `${roundNumber(product.price)} ${product.currency || ""}`],
@@ -278,7 +281,7 @@ export default function ShopDetailPage() {
                         currentValue={report.status}
                         options={reportStatuses}
                         buttonLabel={state.saving === report.reportId ? "Đang lưu..." : "Áp dụng kiểm duyệt báo cáo"}
-                        disabled={state.saving === report.reportId}
+                        disabled={!isAdmin || state.saving === report.reportId}
                         summary={[
                           ["Điểm", roundNumber(report.score)],
                           ["Danh mục", report.category || "Chưa có"],
@@ -315,8 +318,8 @@ export default function ShopDetailPage() {
                       <div className="small mb-3">Mã dữ liệu: {shortText(pledge.dataHash)}</div>
                       <div className="btn-group btn-group-sm flex-wrap">
                         <button type="button" className="btn btn-outline-primary" onClick={() => viewProof(pledge.pledgeId)}>Xem bằng chứng</button>
-                        <button type="button" className="btn btn-outline-success" onClick={() => runIntegrityAction(pledge, "reanchor")}>Ghi nhận lại</button>
-                        <button type="button" className="btn btn-outline-danger" onClick={() => runIntegrityAction(pledge, "revoke")}>Hủy cam kết</button>
+                        <button type="button" className="btn btn-outline-success" disabled={!isAdmin} onClick={() => runIntegrityAction(pledge, "reanchor")}>Ghi nhận lại</button>
+                        <button type="button" className="btn btn-outline-danger" disabled={!isAdmin} onClick={() => runIntegrityAction(pledge, "revoke")}>Hủy cam kết</button>
                       </div>
                     </div>
                   </div>

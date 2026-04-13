@@ -9,15 +9,17 @@ import { formatDateTime, roundNumber } from "../lib/format.js";
 
 export default function DashboardPage() {
   const api = useApi();
-  const [state, setState] = useState({ loading: true, error: "", users: [], shops: [] });
+  const [state, setState] = useState({ loading: true, error: "", users: [], shops: [], buyerEvents: [], reportEvents: [] });
 
   useEffect(() => {
     let active = true;
     async function load() {
       try {
-        const [usersResponse, shopsResponse] = await Promise.all([
+        const [usersResponse, shopsResponse, buyerEventsResponse, reportEventsResponse] = await Promise.all([
           api.get("/admin/users"),
           api.get("/admin/shops", { page: 1, pageSize: 8 }),
+          api.get("/events", { resourceType: "buyer_check", page: 1, pageSize: 150 }),
+          api.get("/events", { resourceType: "product_freshness_report", page: 1, pageSize: 150 }),
         ]);
         if (active) {
           setState({
@@ -25,11 +27,13 @@ export default function DashboardPage() {
             error: "",
             users: usersResponse.items || [],
             shops: shopsResponse.items || [],
+            buyerEvents: buyerEventsResponse.items || [],
+            reportEvents: reportEventsResponse.items || [],
           });
         }
       } catch (error) {
         if (active) {
-          setState({ loading: false, error: error.message, users: [], shops: [] });
+          setState({ loading: false, error: error.message, users: [], shops: [], buyerEvents: [], reportEvents: [] });
         }
       }
     }
@@ -43,6 +47,20 @@ export default function DashboardPage() {
   const pendingShops = state.shops.filter((item) => item.status === "pending").length;
   const riskFlags = state.shops.filter((item) => (item.trustSummary?.highRiskCheckCount || 0) > 0).length;
   const anchored = state.shops.filter((item) => item.trustSummary?.latestPledgeId).length;
+  const latestBuyerEvents = latestByResource(state.buyerEvents || []);
+  const latestReportEvents = latestByResource(state.reportEvents || []);
+  const highRiskBuyerChecks = latestBuyerEvents.filter((event) => {
+    const payload = safePayload(event.payloadJson);
+    const after = payload.after && typeof payload.after === "object" ? payload.after : payload;
+    return String(after.verdict || "") === "high_risk" && String(after.status || event.status || "") === "completed";
+  });
+  const pendingFreshnessReports = latestReportEvents.filter((event) => {
+    const payload = safePayload(event.payloadJson);
+    const after = payload.after && typeof payload.after === "object" ? payload.after : payload;
+    return String(after.status || event.status || "") === "active";
+  });
+  const dailyCheckTrend = aggregateByDate(highRiskBuyerChecks.map((event) => event.createdAt), 7);
+  const dailyReportTrend = aggregateByDate(pendingFreshnessReports.map((event) => event.createdAt), 7);
 
   return (
     <>
@@ -54,6 +72,8 @@ export default function DashboardPage() {
         <MetricCard color="success" title="Cửa hàng" value={state.shops.length} hint={`${pendingShops} đang chờ duyệt`} icon="store" />
         <MetricCard color="warning" title="Cần xem lại" value={riskFlags} hint="Có lượt kiểm tra rủi ro cao" icon="exclamation-triangle" />
         <MetricCard color="info" title="Có cam kết" value={anchored} hint="Cửa hàng đã có dữ liệu đối chiếu" icon="link" />
+        <MetricCard color="danger" title="Buyer check rủi ro cao" value={highRiskBuyerChecks.length} hint="Cần ưu tiên xử lý" icon="shield-alt" />
+        <MetricCard color="secondary" title="Freshness report chờ duyệt" value={pendingFreshnessReports.length} hint="Đang ở trạng thái active" icon="vial" />
       </div>
 
       <div className="row">
@@ -85,6 +105,16 @@ export default function DashboardPage() {
             />
           </Card>
         </div>
+        <div className="col-lg-6 mb-4">
+          <Card title="Xu hướng buyer check rủi ro cao (7 ngày)">
+            <TrendBars items={dailyCheckTrend} />
+          </Card>
+        </div>
+        <div className="col-lg-6 mb-4">
+          <Card title="Xu hướng freshness report chờ duyệt (7 ngày)">
+            <TrendBars items={dailyReportTrend} />
+          </Card>
+        </div>
       </div>
     </>
   );
@@ -109,4 +139,64 @@ function MetricCard({ color, title, value, hint, icon }) {
       </div>
     </div>
   );
+}
+
+function TrendBars({ items }) {
+  const max = Math.max(1, ...items.map((item) => item.count));
+  return (
+    <div>
+      {items.map((item) => (
+        <div className="mb-2" key={item.day}>
+          <div className="small d-flex justify-content-between">
+            <span>{item.day}</span>
+            <strong>{item.count}</strong>
+          </div>
+          <div className="progress">
+            <div className="progress-bar bg-info" role="progressbar" style={{ width: `${(item.count / max) * 100}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function latestByResource(events) {
+  const map = new Map();
+  for (const event of events || []) {
+    const key = `${event.resourceType}:${event.resourceId}`;
+    const existing = map.get(key);
+    if (!existing || new Date(event.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
+      map.set(key, event);
+    }
+  }
+  return Array.from(map.values());
+}
+
+function safePayload(value) {
+  if (typeof value !== "string" || !value.trim()) return {};
+  try {
+    return JSON.parse(value);
+  } catch {
+    return {};
+  }
+}
+
+function aggregateByDate(values, days) {
+  const counts = new Map();
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() - i);
+    const key = date.toISOString().slice(0, 10);
+    counts.set(key, 0);
+  }
+  for (const value of values) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) continue;
+    const key = date.toISOString().slice(0, 10);
+    if (counts.has(key)) {
+      counts.set(key, counts.get(key) + 1);
+    }
+  }
+  return Array.from(counts.entries()).map(([day, count]) => ({ day, count }));
 }

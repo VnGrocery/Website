@@ -12,18 +12,20 @@ export default function Layout() {
   const [me, setMe] = useState(null);
   const [bootError, setBootError] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [alerts, setAlerts] = useState({ highRiskChecks: 0, pendingReports: 0 });
 
   const navItems = useMemo(
     () => [
       { to: "/", label: "Tổng quan", icon: "tachometer-alt", end: true },
       { to: "/users", label: "Người dùng", icon: "users-cog" },
       { to: "/shops", label: "Cửa hàng", icon: "store-alt" },
-      { to: "/buyer-checks", label: "Lượt kiểm tra khách", icon: "clipboard-check" },
+      { to: "/buyer-checks", label: "Lượt kiểm tra khách", icon: "clipboard-check", badge: alerts.highRiskChecks },
+      { to: "/freshness-reports", label: "Báo cáo độ tươi", icon: "vial", badge: alerts.pendingReports },
       { to: "/events", label: "Lịch sử thay đổi", icon: "stream" },
       { to: "/account", label: "Tài khoản", icon: "user-cog" },
       { to: "/tools", label: "Công cụ xử lý", icon: "shield-alt" },
     ],
-    [],
+    [alerts.highRiskChecks, alerts.pendingReports],
   );
 
   useEffect(() => {
@@ -58,6 +60,45 @@ export default function Layout() {
       active = false;
     };
   }, [api, clearSession, navigate]);
+
+  useEffect(() => {
+    let active = true;
+    async function loadAlerts() {
+      try {
+        const [checks, reports] = await Promise.all([
+          api.get("/events", { resourceType: "buyer_check", page: 1, pageSize: 120 }),
+          api.get("/events", { resourceType: "product_freshness_report", page: 1, pageSize: 120 }),
+        ]);
+        if (!active) return;
+
+        const latestChecks = latestByResource(checks.items || []);
+        const highRiskChecks = latestChecks.filter((event) => {
+          const payload = safePayload(event.payloadJson);
+          const after = payload.after && typeof payload.after === "object" ? payload.after : payload;
+          const verdict = String(after.verdict || "");
+          const status = String(after.status || event.status || "");
+          return verdict === "high_risk" && status === "completed";
+        }).length;
+
+        const latestReports = latestByResource(reports.items || []);
+        const pendingReports = latestReports.filter((event) => {
+          const payload = safePayload(event.payloadJson);
+          const after = payload.after && typeof payload.after === "object" ? payload.after : payload;
+          const status = String(after.status || event.status || "");
+          return status === "active";
+        }).length;
+
+        setAlerts({ highRiskChecks, pendingReports });
+      } catch {
+        if (!active) return;
+        setAlerts({ highRiskChecks: 0, pendingReports: 0 });
+      }
+    }
+    loadAlerts();
+    return () => {
+      active = false;
+    };
+  }, [api, location.pathname]);
 
   async function logout() {
     try {
@@ -97,6 +138,7 @@ export default function Layout() {
             >
               <i className={`fas fa-fw fa-${item.icon}`} />
               <span>{item.label}</span>
+              {item.badge > 0 ? <span className="badge badge-warning ml-2">{item.badge}</span> : null}
             </NavLink>
           </li>
         ))}
@@ -151,4 +193,25 @@ export default function Layout() {
       </div>
     </div>
   );
+}
+
+function latestByResource(events) {
+  const map = new Map();
+  for (const event of events) {
+    const key = `${event.resourceType}:${event.resourceId}`;
+    const prev = map.get(key);
+    if (!prev || new Date(event.createdAt).getTime() > new Date(prev.createdAt).getTime()) {
+      map.set(key, event);
+    }
+  }
+  return Array.from(map.values());
+}
+
+function safePayload(value) {
+  if (typeof value !== "string" || !value.trim()) return {};
+  try {
+    return JSON.parse(value);
+  } catch {
+    return {};
+  }
 }

@@ -6,24 +6,23 @@ import PageHeader from "../components/PageHeader.jsx";
 import PaginationBar from "../components/PaginationBar.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { useApi } from "../lib/api.jsx";
-import { buyerCheckStatuses, labelOf } from "../lib/constants.js";
+import { labelOf, reportStatuses } from "../lib/constants.js";
 import { downloadCsv, downloadJson } from "../lib/export.js";
 import { formatDateTime, fromDatetimeLocalInput, roundNumber, toDatetimeLocalInput } from "../lib/format.js";
 import { useToast } from "../components/ToastStack.jsx";
 
 const defaultFilters = {
-  checkId: "",
-  buyerUserId: "",
+  reportId: "",
+  reporterUserId: "",
   shopId: "",
   productId: "",
   status: "",
-  verdict: "",
   createdAfter: "",
   createdBefore: "",
   page: "1",
 };
 
-export default function BuyerChecksPage() {
+export default function FreshnessReportsPage() {
   const api = useApi();
   const toast = useToast();
   const { me } = useOutletContext() || {};
@@ -38,9 +37,9 @@ export default function BuyerChecksPage() {
     async function load() {
       try {
         const response = await api.get("/events", {
-          resourceType: "buyer_check",
-          resourceId: filters.checkId,
-          actorUserId: filters.buyerUserId,
+          resourceType: "product_freshness_report",
+          resourceId: filters.reportId,
+          actorUserId: filters.reporterUserId,
           status: filters.status,
           createdAfter: fromDatetimeLocalInput(filters.createdAfter),
           createdBefore: fromDatetimeLocalInput(filters.createdBefore),
@@ -49,11 +48,10 @@ export default function BuyerChecksPage() {
         });
 
         if (!active) return;
-        const merged = mergeLatestByResource((response.items || []).map(extractBuyerCheck));
+        const merged = mergeLatestByResource((response.items || []).map(extractReport));
         const items = merged.filter((item) => {
           if (filters.shopId && item.shopId !== filters.shopId) return false;
           if (filters.productId && item.productId !== filters.productId) return false;
-          if (filters.verdict && item.verdict !== filters.verdict) return false;
           return true;
         });
 
@@ -63,7 +61,7 @@ export default function BuyerChecksPage() {
           error: "",
           items,
           pagination: response.pagination || null,
-          selected: current.selected.filter((id) => items.some((item) => item.checkId === id)),
+          selected: current.selected.filter((id) => items.some((item) => item.reportId === id)),
         }));
       } catch (error) {
         if (!active) return;
@@ -76,84 +74,81 @@ export default function BuyerChecksPage() {
     return () => {
       active = false;
     };
-  }, [api, filters.checkId, filters.buyerUserId, filters.shopId, filters.productId, filters.status, filters.verdict, filters.createdAfter, filters.createdBefore, filters.page]);
+  }, [api, filters.reportId, filters.reporterUserId, filters.shopId, filters.productId, filters.status, filters.createdAfter, filters.createdBefore, filters.page]);
 
   async function moderateOne(item, status) {
     setState((current) => ({ ...current, applying: true, error: "" }));
     try {
-      const updated = await patchBuyerCheckWithRetry(api, item, {
+      const updated = await patchReportWithRetry(api, item, {
         status,
-        moderationNote: "moderated from buyer checks list",
+        moderationNote: "moderated from freshness reports list",
       });
       setState((current) => ({
         ...current,
         applying: false,
-        items: current.items.map((row) => (row.checkId === item.checkId ? { ...row, ...updated } : row)),
+        items: current.items.map((row) => (row.reportId === item.reportId ? { ...row, ...updated } : row)),
       }));
-      toast.success(`Đã cập nhật ${item.checkId} -> ${labelOf(status)}`);
+      toast.success(`Đã cập nhật ${item.reportId} -> ${labelOf(status)}`);
     } catch (error) {
       setState((current) => ({ ...current, applying: false, error: error.message }));
     }
   }
 
   async function applyBulkModeration() {
-    const targets = state.items.filter((item) => state.selected.includes(item.checkId));
-    if (!targets.length) {
-      return;
-    }
+    const targets = state.items.filter((item) => state.selected.includes(item.reportId));
+    if (!targets.length) return;
+
     setState((current) => ({ ...current, applying: true, error: "" }));
     try {
       const updates = await Promise.all(
         targets.map(async (item) => {
-          const updated = await patchBuyerCheckWithRetry(api, item, {
+          const updated = await patchReportWithRetry(api, item, {
             status: bulk.status,
             moderationNote: bulk.note,
           });
-          return { checkId: item.checkId, updated };
+          return { reportId: item.reportId, updated };
         }),
       );
-      const updateMap = new Map(updates.map((entry) => [entry.checkId, entry.updated]));
+      const updateMap = new Map(updates.map((entry) => [entry.reportId, entry.updated]));
       setState((current) => ({
         ...current,
         applying: false,
         selected: [],
-        items: current.items.map((item) => (updateMap.has(item.checkId) ? { ...item, ...updateMap.get(item.checkId) } : item)),
+        items: current.items.map((item) => (updateMap.has(item.reportId) ? { ...item, ...updateMap.get(item.reportId) } : item)),
       }));
-      toast.success(`Đã duyệt ${updates.length} lượt kiểm tra`);
+      toast.success(`Đã duyệt ${updates.length} báo cáo độ tươi`);
     } catch (error) {
       setState((current) => ({ ...current, applying: false, error: error.message }));
     }
   }
 
-  function toggleSelected(checkId) {
+  function toggleSelected(reportId) {
     setState((current) => ({
       ...current,
-      selected: current.selected.includes(checkId)
-        ? current.selected.filter((id) => id !== checkId)
-        : [...current.selected, checkId],
+      selected: current.selected.includes(reportId)
+        ? current.selected.filter((id) => id !== reportId)
+        : [...current.selected, reportId],
     }));
   }
 
   function exportCurrentAsJson() {
-    downloadJson(`buyer-checks-page-${filters.page || "1"}.json`, state.items);
+    downloadJson(`freshness-reports-page-${filters.page || "1"}.json`, state.items);
   }
 
   function exportCurrentAsCsv() {
     downloadCsv(
-      `buyer-checks-page-${filters.page || "1"}.csv`,
-      ["checkId", "shopId", "productId", "buyerUserId", "status", "verdict", "trusted", "actualScore", "pledgedScore", "scoreDeltaAbs", "reasons", "createdAt"],
+      `freshness-reports-page-${filters.page || "1"}.csv`,
+      ["reportId", "shopId", "productId", "reporterUserId", "status", "score", "category", "confidence", "comment", "createdAt"],
       state.items.map((item) => [
-        item.checkId,
+        item.reportId,
         item.shopId,
         item.productId,
-        item.buyerUserId,
+        item.reporterUserId,
         item.status,
-        item.verdict,
-        item.trusted,
-        item.actualScore,
-        item.pledgedScore,
-        item.scoreDeltaAbs,
-        (item.reasons || []).join("|"),
+        item.score,
+        item.category,
+        item.confidence,
+        item.comment,
         item.createdAt,
       ]),
     );
@@ -162,8 +157,8 @@ export default function BuyerChecksPage() {
   return (
     <>
       <PageHeader
-        title="Lượt kiểm tra của khách"
-        subtitle="Danh sách chung các lượt buyer check đã ghi nhận trên toàn hệ thống"
+        title="Báo cáo độ tươi"
+        subtitle="Danh sách chung các lượt freshness report trên toàn hệ thống"
         actions={
           <div className="btn-group btn-group-sm">
             <button type="button" className="btn btn-outline-secondary" onClick={exportCurrentAsCsv}>Xuất CSV</button>
@@ -178,8 +173,8 @@ export default function BuyerChecksPage() {
         <div className="col-12 mb-4">
           <Card title="Bộ lọc">
             <div className="form-row align-items-end">
-              <FilterInput label="Mã check" value={filters.checkId} onChange={(checkId) => setSearchParams(compactQuery({ ...filters, checkId, page: "1" }))} />
-              <FilterInput label="Người mua" value={filters.buyerUserId} onChange={(buyerUserId) => setSearchParams(compactQuery({ ...filters, buyerUserId, page: "1" }))} />
+              <FilterInput label="Mã báo cáo" value={filters.reportId} onChange={(reportId) => setSearchParams(compactQuery({ ...filters, reportId, page: "1" }))} />
+              <FilterInput label="Người báo cáo" value={filters.reporterUserId} onChange={(reporterUserId) => setSearchParams(compactQuery({ ...filters, reporterUserId, page: "1" }))} />
               <FilterInput label="Cửa hàng" value={filters.shopId} onChange={(shopId) => setSearchParams(compactQuery({ ...filters, shopId, page: "1" }))} />
               <FilterInput label="Sản phẩm" value={filters.productId} onChange={(productId) => setSearchParams(compactQuery({ ...filters, productId, page: "1" }))} />
             </div>
@@ -188,17 +183,7 @@ export default function BuyerChecksPage() {
                 <label>Trạng thái</label>
                 <select className="form-control" value={filters.status} onChange={(event) => setSearchParams(compactQuery({ ...filters, status: event.target.value, page: "1" }))}>
                   <option value="">Tất cả</option>
-                  {buyerCheckStatuses.map((option) => <option key={option} value={option}>{labelOf(option)}</option>)}
-                </select>
-              </div>
-              <div className="col-md-2 mb-3">
-                <label>Kết luận</label>
-                <select className="form-control" value={filters.verdict} onChange={(event) => setSearchParams(compactQuery({ ...filters, verdict: event.target.value, page: "1" }))}>
-                  <option value="">Tất cả</option>
-                  <option value="trusted">Đáng tin cậy</option>
-                  <option value="warning">Cần chú ý</option>
-                  <option value="high_risk">Rủi ro cao</option>
-                  <option value="no_pledge">Không có pledge</option>
+                  {reportStatuses.map((option) => <option key={option} value={option}>{labelOf(option)}</option>)}
                 </select>
               </div>
               <DateFilter label="Từ" value={filters.createdAfter} onChange={(createdAfter) => setSearchParams(compactQuery({ ...filters, createdAfter, page: "1" }))} />
@@ -216,7 +201,7 @@ export default function BuyerChecksPage() {
               <div className="col-md-3 mb-3">
                 <label>Trạng thái áp dụng</label>
                 <select className="form-control" value={bulk.status} onChange={(event) => setBulk((current) => ({ ...current, status: event.target.value }))}>
-                  {buyerCheckStatuses.map((option) => <option key={option} value={option}>{labelOf(option)}</option>)}
+                  {reportStatuses.map((option) => <option key={option} value={option}>{labelOf(option)}</option>)}
                 </select>
               </div>
               <div className="col-md-6 mb-3">
@@ -233,7 +218,7 @@ export default function BuyerChecksPage() {
         </div>
 
         <div className="col-12">
-          <Card title="Danh sách lượt kiểm tra" loading={state.loading}>
+          <Card title="Danh sách báo cáo" loading={state.loading}>
             <div className="table-responsive">
               <table className="table table-bordered">
                 <thead>
@@ -245,64 +230,54 @@ export default function BuyerChecksPage() {
                         onChange={(event) =>
                           setState((current) => ({
                             ...current,
-                            selected: event.target.checked ? current.items.map((item) => item.checkId) : [],
+                            selected: event.target.checked ? current.items.map((item) => item.reportId) : [],
                           }))
                         }
                       />
                     </th>
-                    <th>Mã check</th>
+                    <th>Mã báo cáo</th>
                     <th>Liên kết</th>
-                    <th>Kết luận</th>
+                    <th>Trạng thái</th>
                     <th>Điểm</th>
-                    <th>Lý do</th>
+                    <th>Nội dung</th>
                     <th>Thời gian</th>
                     <th>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {state.items.map((item) => (
-                    <tr key={item.checkId}>
+                    <tr key={item.reportId}>
                       <td>
-                        <input type="checkbox" checked={state.selected.includes(item.checkId)} onChange={() => toggleSelected(item.checkId)} />
+                        <input type="checkbox" checked={state.selected.includes(item.reportId)} onChange={() => toggleSelected(item.reportId)} />
                       </td>
                       <td>
-                        <div className="font-weight-bold">{item.checkId}</div>
-                        <div className="small text-muted">buyer: {item.buyerUserId || "Chưa có"}</div>
+                        <div className="font-weight-bold">{item.reportId}</div>
+                        <div className="small text-muted">user: {item.reporterUserId || "Chưa có"}</div>
                       </td>
                       <td>
                         {item.shopId ? <Link to={`/shops/${item.shopId}`}>Shop</Link> : "-"}
                         <div className="small text-muted">product: {item.productId || "-"}</div>
-                        <div className="small text-muted">pledge: {item.pledgeId || "-"}</div>
                       </td>
+                      <td><StatusBadge value={item.status || "active"} /></td>
                       <td>
-                        <StatusBadge value={item.status || "completed"} />
-                        <div className="small mt-1">{labelVerdict(item.verdict, item.trusted)}</div>
+                        {roundNumber(item.score)}
+                        <div className="small text-muted">{item.category || "-"}, conf {roundNumber(item.confidence)}</div>
                       </td>
-                      <td>
-                        {item.hasPledge ? (
-                          <>
-                            {roundNumber(item.actualScore)} / {roundNumber(item.pledgedScore)}
-                            <div className="small text-muted">Δ {roundNumber(item.scoreDeltaAbs)}</div>
-                          </>
-                        ) : (
-                          <>{roundNumber(item.actualScore)} <span className="small text-muted">(không pledge)</span></>
-                        )}
-                      </td>
-                      <td>{(item.reasons || []).join(", ") || "Không có"}</td>
+                      <td>{item.comment || "Không có"}</td>
                       <td>{formatDateTime(item.createdAt)}</td>
                       <td>
                         <div className="btn-group btn-group-sm flex-wrap">
                           <button type="button" className="btn btn-outline-warning" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "flagged")}>Gắn cờ</button>
                           <button type="button" className="btn btn-outline-danger" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "rejected")}>Từ chối</button>
-                          <button type="button" className="btn btn-outline-success" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "completed")}>Hoàn tất</button>
-                          <Link className="btn btn-outline-primary" to={`/tools?buyerCheckId=${encodeURIComponent(item.checkId)}&expectedVersion=${item.version || 1}`}>Duyệt chi tiết</Link>
+                          <button type="button" className="btn btn-outline-success" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "active")}>Kích hoạt</button>
+                          <Link className="btn btn-outline-primary" to={`/tools?reportId=${encodeURIComponent(item.reportId)}&reportExpectedVersion=${item.version || 1}`}>Duyệt chi tiết</Link>
                         </div>
                       </td>
                     </tr>
                   ))}
                   {!state.loading && !state.items.length ? (
                     <tr>
-                      <td colSpan="8" className="text-center text-muted py-4">Chưa có lượt kiểm tra nào phù hợp bộ lọc.</td>
+                      <td colSpan="8" className="text-center text-muted py-4">Chưa có báo cáo nào phù hợp bộ lọc.</td>
                     </tr>
                   ) : null}
                 </tbody>
@@ -326,40 +301,41 @@ export default function BuyerChecksPage() {
   );
 }
 
-async function patchBuyerCheckWithRetry(api, item, input) {
+async function patchReportWithRetry(api, item, input) {
   try {
-    const updated = await api.patch(`/admin/buyer-checks/${item.checkId}/moderation`, {
+    const updated = await api.patch(`/admin/product-freshness-reports/${item.reportId}/moderation`, {
       expectedVersion: Number(item.version || 1),
       status: input.status,
       moderationNote: input.moderationNote || "",
     });
-    return normalizePatchedBuyerCheck(updated);
+    return {
+      status: updated.status,
+      version: Number(updated.version || 1),
+      score: Number(updated.score || item.score || 0),
+      category: updated.category || item.category,
+      confidence: Number(updated.confidence || item.confidence || 0),
+      comment: updated.comment || item.comment,
+    };
   } catch (error) {
     if (!String(error.message || "").toLowerCase().includes("version conflict")) {
       throw error;
     }
 
-    const latestVersion = await getLatestResourceVersion(api, "buyer_check", item.checkId);
-    const updated = await api.patch(`/admin/buyer-checks/${item.checkId}/moderation`, {
+    const latestVersion = await getLatestResourceVersion(api, "product_freshness_report", item.reportId);
+    const updated = await api.patch(`/admin/product-freshness-reports/${item.reportId}/moderation`, {
       expectedVersion: Number(latestVersion || item.version || 1),
       status: input.status,
       moderationNote: input.moderationNote || "",
     });
-    return normalizePatchedBuyerCheck(updated);
+    return {
+      status: updated.status,
+      version: Number(updated.version || 1),
+      score: Number(updated.score || item.score || 0),
+      category: updated.category || item.category,
+      confidence: Number(updated.confidence || item.confidence || 0),
+      comment: updated.comment || item.comment,
+    };
   }
-}
-
-function normalizePatchedBuyerCheck(updated) {
-  return {
-    status: updated.status,
-    version: Number(updated.version || 1),
-    verdict: updated.verdict,
-    trusted: Boolean(updated.trusted),
-    pledgedScore: Number(updated.pledgedScore || 0),
-    actualScore: Number(updated.actualScore || 0),
-    scoreDeltaAbs: Number(updated.scoreDeltaAbs || 0),
-    reasons: Array.isArray(updated.reasons) ? updated.reasons : [],
-  };
 }
 
 async function getLatestResourceVersion(api, resourceType, resourceId) {
@@ -374,42 +350,35 @@ async function getLatestResourceVersion(api, resourceType, resourceId) {
 function mergeLatestByResource(items) {
   const map = new Map();
   for (const item of items) {
-    const existing = map.get(item.checkId);
+    const existing = map.get(item.reportId);
     if (!existing || new Date(item.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
-      map.set(item.checkId, item);
+      map.set(item.reportId, item);
     }
   }
   return Array.from(map.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
-function extractBuyerCheck(event) {
+function extractReport(event) {
   const payload = parseMaybeJson(event.payloadJson);
   const after = payload && typeof payload === "object" && payload.after && typeof payload.after === "object" ? payload.after : payload;
   const data = after && typeof after === "object" ? after : {};
-
   return {
-    checkId: String(data.checkId || event.resourceId || ""),
+    reportId: String(data.reportId || event.resourceId || ""),
     shopId: String(data.shopId || ""),
     productId: String(data.productId || ""),
-    pledgeId: String(data.pledgeId || ""),
-    buyerUserId: String(data.buyerUserId || event.actorUserId || ""),
-    status: String(data.status || event.status || "completed"),
+    reporterUserId: String(data.reporterUserId || event.actorUserId || ""),
+    status: String(data.status || event.status || "active"),
     version: Number(data.version || event.resourceVersion || 1),
-    verdict: String(data.verdict || ""),
-    trusted: Boolean(data.trusted),
-    hasPledge: Boolean(data.pledgeId),
-    pledgedScore: Number(data.pledgedScore || 0),
-    actualScore: Number(data.actualScore || 0),
-    scoreDeltaAbs: Number(data.scoreDeltaAbs || 0),
-    reasons: Array.isArray(data.reasons) ? data.reasons : [],
+    score: Number(data.score || 0),
+    category: String(data.category || ""),
+    confidence: Number(data.confidence || 0),
+    comment: String(data.comment || ""),
     createdAt: data.updatedAt || data.createdAt || event.createdAt,
   };
 }
 
 function parseMaybeJson(value) {
-  if (typeof value !== "string" || !value.trim()) {
-    return {};
-  }
+  if (typeof value !== "string" || !value.trim()) return {};
   try {
     return JSON.parse(value);
   } catch {
@@ -419,14 +388,6 @@ function parseMaybeJson(value) {
 
 function compactQuery(input) {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== "" && value !== undefined && value !== null));
-}
-
-function labelVerdict(verdict, trusted) {
-  if (trusted || verdict === "trusted") return "Đáng tin cậy";
-  if (verdict === "high_risk") return "Rủi ro cao";
-  if (verdict === "warning") return "Cần chú ý";
-  if (verdict === "no_pledge") return "Không có cam kết đối chiếu";
-  return verdict || "Chưa có";
 }
 
 function FilterInput({ label, value, onChange }) {

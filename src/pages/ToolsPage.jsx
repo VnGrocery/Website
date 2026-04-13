@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useOutletContext, useSearchParams } from "react-router-dom";
 import AlertBanner from "../components/AlertBanner.jsx";
 import Card from "../components/Card.jsx";
 import PageHeader from "../components/PageHeader.jsx";
@@ -10,6 +10,8 @@ import { buyerCheckStatuses, labelOf, reportStatuses } from "../lib/constants.js
 export default function ToolsPage() {
   const api = useApi();
   const toast = useToast();
+  const { me } = useOutletContext() || {};
+  const isAdmin = String(me?.role || "").toLowerCase() === "admin";
   const [searchParams] = useSearchParams();
   const [buyerForm, setBuyerForm] = useState({ checkId: "", expectedVersion: "", status: "flagged", moderationNote: "" });
   const [reportForm, setReportForm] = useState({ reportId: "", expectedVersion: "", status: "flagged", moderationNote: "" });
@@ -20,7 +22,9 @@ export default function ToolsPage() {
     const checkId = searchParams.get("buyerCheckId");
     const expectedVersion = searchParams.get("expectedVersion");
     const status = searchParams.get("status");
-    if (!checkId && !expectedVersion && !status) {
+    const reportId = searchParams.get("reportId");
+    const reportExpectedVersion = searchParams.get("reportExpectedVersion");
+    if (!checkId && !expectedVersion && !status && !reportId && !reportExpectedVersion) {
       return;
     }
 
@@ -30,6 +34,11 @@ export default function ToolsPage() {
       expectedVersion: expectedVersion || current.expectedVersion,
       status: status && buyerCheckStatuses.includes(status) ? status : current.status,
     }));
+    setReportForm((current) => ({
+      ...current,
+      reportId: reportId || current.reportId,
+      expectedVersion: reportExpectedVersion || current.expectedVersion,
+    }));
   }, [searchParams]);
 
   async function submitBuyerCheck(event) {
@@ -37,11 +46,7 @@ export default function ToolsPage() {
     setBusy("buyer");
     setError("");
     try {
-      const result = await api.patch(`/admin/buyer-checks/${buyerForm.checkId}/moderation`, {
-        expectedVersion: Number(buyerForm.expectedVersion),
-        status: buyerForm.status,
-        moderationNote: buyerForm.moderationNote,
-      });
+      const result = await patchBuyerCheckWithRetry(api, buyerForm);
       toast.success(`Đã cập nhật lượt kiểm tra ${result.checkId} sang ${labelOf(result.status)}`);
     } catch (submitError) {
       setError(submitError.message);
@@ -55,11 +60,7 @@ export default function ToolsPage() {
     setBusy("report");
     setError("");
     try {
-      const result = await api.patch(`/admin/product-freshness-reports/${reportForm.reportId}/moderation`, {
-        expectedVersion: Number(reportForm.expectedVersion),
-        status: reportForm.status,
-        moderationNote: reportForm.moderationNote,
-      });
+      const result = await patchReportWithRetry(api, reportForm);
       toast.success(`Đã cập nhật báo cáo ${result.reportId} sang ${labelOf(result.status)}`);
     } catch (submitError) {
       setError(submitError.message);
@@ -80,6 +81,7 @@ export default function ToolsPage() {
           </>
         }
       />
+      {!isAdmin ? <AlertBanner tone="info" text="Tài khoản hiện tại chỉ có quyền xem, không có quyền duyệt." /> : null}
       <AlertBanner tone="danger" text={error} />
 
       <div className="row">
@@ -101,7 +103,7 @@ export default function ToolsPage() {
                 <label>Ghi chú xử lý</label>
                 <textarea className="form-control" rows="4" value={buyerForm.moderationNote} onChange={(event) => setBuyerForm({ ...buyerForm, moderationNote: event.target.value })} />
               </div>
-              <button type="submit" className="btn btn-primary" disabled={busy === "buyer"}>
+              <button type="submit" className="btn btn-primary" disabled={!isAdmin || busy === "buyer"}>
                 {busy === "buyer" ? "Đang áp dụng..." : "Lưu kết quả xử lý"}
               </button>
             </form>
@@ -126,7 +128,7 @@ export default function ToolsPage() {
                 <label>Ghi chú xử lý</label>
                 <textarea className="form-control" rows="4" value={reportForm.moderationNote} onChange={(event) => setReportForm({ ...reportForm, moderationNote: event.target.value })} />
               </div>
-              <button type="submit" className="btn btn-primary" disabled={busy === "report"}>
+              <button type="submit" className="btn btn-primary" disabled={!isAdmin || busy === "report"}>
                 {busy === "report" ? "Đang áp dụng..." : "Lưu kết quả xử lý"}
               </button>
             </form>
@@ -135,6 +137,64 @@ export default function ToolsPage() {
       </div>
     </>
   );
+}
+
+async function patchBuyerCheckWithRetry(api, buyerForm) {
+  try {
+    return await api.patch(`/admin/buyer-checks/${buyerForm.checkId}/moderation`, {
+      expectedVersion: Number(buyerForm.expectedVersion),
+      status: buyerForm.status,
+      moderationNote: buyerForm.moderationNote,
+    });
+  } catch (error) {
+    if (!String(error.message || "").toLowerCase().includes("version conflict")) {
+      throw error;
+    }
+    const latestVersion = await getLatestResourceVersion(api, "buyer_check", buyerForm.checkId);
+    return api.patch(`/admin/buyer-checks/${buyerForm.checkId}/moderation`, {
+      expectedVersion: Number(latestVersion || buyerForm.expectedVersion || 1),
+      status: buyerForm.status,
+      moderationNote: buyerForm.moderationNote,
+    });
+  }
+}
+
+async function patchReportWithRetry(api, reportForm) {
+  try {
+    return await api.patch(`/admin/product-freshness-reports/${reportForm.reportId}/moderation`, {
+      expectedVersion: Number(reportForm.expectedVersion),
+      status: reportForm.status,
+      moderationNote: reportForm.moderationNote,
+    });
+  } catch (error) {
+    if (!String(error.message || "").toLowerCase().includes("version conflict")) {
+      throw error;
+    }
+    const latestVersion = await getLatestResourceVersion(api, "product_freshness_report", reportForm.reportId);
+    return api.patch(`/admin/product-freshness-reports/${reportForm.reportId}/moderation`, {
+      expectedVersion: Number(latestVersion || reportForm.expectedVersion || 1),
+      status: reportForm.status,
+      moderationNote: reportForm.moderationNote,
+    });
+  }
+}
+
+async function getLatestResourceVersion(api, resourceType, resourceId) {
+  const response = await api.get("/events", { resourceType, resourceId, page: 1, pageSize: 1 });
+  const latest = response.items?.[0];
+  if (!latest) return 1;
+  const payload = safeParse(latest.payloadJson);
+  const after = payload.after && typeof payload.after === "object" ? payload.after : payload;
+  return Number(after.version || latest.resourceVersion || 1);
+}
+
+function safeParse(value) {
+  if (typeof value !== "string" || !value.trim()) return {};
+  try {
+    return JSON.parse(value);
+  } catch {
+    return {};
+  }
 }
 
 function SelectField({ label, value, options, onChange }) {
