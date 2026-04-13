@@ -48,6 +48,14 @@ function AdminShell({ session, onSessionChange }) {
   const api = useMemo(() => createApiClient(session, onSessionChange), [session, onSessionChange]);
   const [me, setMe] = useState(null);
   const [bootError, setBootError] = useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    document.body.classList.toggle("sidebar-toggled", sidebarCollapsed);
+    return () => {
+      document.body.classList.remove("sidebar-toggled");
+    };
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     let active = true;
@@ -85,7 +93,7 @@ function AdminShell({ session, onSessionChange }) {
 
   return (
     <div id="wrapper">
-      <ul className="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion">
+      <ul className={`navbar-nav bg-gradient-primary sidebar sidebar-dark accordion ${sidebarCollapsed ? "toggled" : ""}`}>
         <a className="sidebar-brand d-flex align-items-center justify-content-center" href="/">
           <div className="sidebar-brand-icon rotate-n-15">
             <i className="fas fa-store" />
@@ -121,31 +129,38 @@ function AdminShell({ session, onSessionChange }) {
         </li>
 
         <hr className="sidebar-divider d-none d-md-block" />
-
-        <div className="sidebar-card d-none d-lg-flex">
-          <img className="sidebar-card-illustration mb-2" src="/img/undraw_profile.svg" alt="" />
-          <p className="text-center mb-2">
-            <strong>{me?.email || session.email || "admin"}</strong>
-          </p>
-          <button type="button" className="btn btn-light btn-sm" onClick={logout}>
-            Sign out
-          </button>
-        </div>
       </ul>
 
       <div id="content-wrapper" className="d-flex flex-column">
         <div id="content">
           <nav className="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+            <button
+              type="button"
+              className="btn btn-link d-md-inline rounded-circle mr-3"
+              onClick={() => setSidebarCollapsed((current) => !current)}
+            >
+              <i className="fa fa-bars" />
+            </button>
             <div className="mr-auto">
               <div className="text-xs font-weight-bold text-primary text-uppercase mb-1">
                 Operations Console
               </div>
               <div className="h5 mb-0 text-gray-800">Admin control panel</div>
             </div>
-            <div className="ml-auto d-flex align-items-center">
-              <span className="badge badge-primary badge-pill px-3 py-2">
+            <div className="ml-auto d-flex align-items-center topbar-user-block">
+              <span className="badge badge-primary badge-pill px-3 py-2 mr-3">
                 API: {session.apiBaseUrl}
               </span>
+              <div className="topbar-divider d-none d-sm-block" />
+              <div className="nav-item dropdown no-arrow d-flex align-items-center">
+                <div className="mr-3 text-right d-none d-lg-inline">
+                  <div className="small text-gray-500">Signed in</div>
+                  <div className="font-weight-bold text-gray-800">{me?.email || session.email || "admin"}</div>
+                </div>
+                <button type="button" className="btn btn-outline-primary btn-sm ml-3" onClick={logout}>
+                  Sign out
+                </button>
+              </div>
             </div>
           </nav>
 

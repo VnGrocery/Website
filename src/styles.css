@@ -22,10 +22,6 @@ body {
   color: #fff;
 }
 
-.sidebar-card img {
-  max-width: 6rem;
-}
-
 .inline-action-react {
   min-width: 170px;
 }
@@ -42,4 +38,8 @@ body {
 
 .card .badge {
   text-transform: uppercase;
+}
+
+#wrapper #content-wrapper {
+  min-width: 0;
 }
