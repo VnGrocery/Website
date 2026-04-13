@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import AlertBanner from "../components/AlertBanner.jsx";
 import Card from "../components/Card.jsx";
 import PageHeader from "../components/PageHeader.jsx";
@@ -9,10 +10,27 @@ import { buyerCheckStatuses, labelOf, reportStatuses } from "../lib/constants.js
 export default function ToolsPage() {
   const api = useApi();
   const toast = useToast();
+  const [searchParams] = useSearchParams();
   const [buyerForm, setBuyerForm] = useState({ checkId: "", expectedVersion: "", status: "flagged", moderationNote: "" });
   const [reportForm, setReportForm] = useState({ reportId: "", expectedVersion: "", status: "flagged", moderationNote: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
+
+  useEffect(() => {
+    const checkId = searchParams.get("buyerCheckId");
+    const expectedVersion = searchParams.get("expectedVersion");
+    const status = searchParams.get("status");
+    if (!checkId && !expectedVersion && !status) {
+      return;
+    }
+
+    setBuyerForm((current) => ({
+      ...current,
+      checkId: checkId || current.checkId,
+      expectedVersion: expectedVersion || current.expectedVersion,
+      status: status && buyerCheckStatuses.includes(status) ? status : current.status,
+    }));
+  }, [searchParams]);
 
   async function submitBuyerCheck(event) {
     event.preventDefault();
@@ -53,7 +71,15 @@ export default function ToolsPage() {
   return (
     <>
       <PageHeader title="Công cụ xử lý nhanh" subtitle="Xử lý trực tiếp khi đã có mã và phiên bản của dữ liệu" />
-      <AlertBanner tone="info" text="Hệ thống hiện chưa có danh sách chung cho các lượt kiểm tra của khách. Màn này xử lý trực tiếp theo mã và phiên bản mong muốn." />
+      <AlertBanner
+        tone="info"
+        text={
+          <>
+            Đã có danh sách chung cho các lượt kiểm tra của khách tại{" "}
+            <Link to="/buyer-checks">màn Lượt kiểm tra khách</Link>. Bạn có thể bấm “Duyệt nhanh” để điền sẵn mã và phiên bản tại đây.
+          </>
+        }
+      />
       <AlertBanner tone="danger" text={error} />
 
       <div className="row">

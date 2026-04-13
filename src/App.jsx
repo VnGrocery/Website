@@ -5,6 +5,7 @@ import Layout from "./components/Layout.jsx";
 import { ConfirmProvider } from "./components/ConfirmDialog.jsx";
 import { ToastProvider } from "./components/ToastStack.jsx";
 import AccountPage from "./pages/AccountPage.jsx";
+import BuyerChecksPage from "./pages/BuyerChecksPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import EventsPage from "./pages/EventsPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
@@ -51,6 +52,7 @@ function AppRoutes() {
         <Route path="users" element={<UsersPage />} />
         <Route path="shops" element={<ShopsPage />} />
         <Route path="shops/:shopId" element={<ShopDetailPage />} />
+        <Route path="buyer-checks" element={<BuyerChecksPage />} />
         <Route path="events" element={<EventsPage />} />
         <Route path="events/verify" element={<VerifyResourcePage />} />
         <Route path="events/:eventId/verify" element={<VerifyEventPage />} />

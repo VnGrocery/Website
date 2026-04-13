@@ -18,6 +18,7 @@ export default function Layout() {
       { to: "/", label: "Tổng quan", icon: "tachometer-alt", end: true },
       { to: "/users", label: "Người dùng", icon: "users-cog" },
       { to: "/shops", label: "Cửa hàng", icon: "store-alt" },
+      { to: "/buyer-checks", label: "Lượt kiểm tra khách", icon: "clipboard-check" },
       { to: "/events", label: "Lịch sử thay đổi", icon: "stream" },
       { to: "/account", label: "Tài khoản", icon: "user-cog" },
       { to: "/tools", label: "Công cụ xử lý", icon: "shield-alt" },
