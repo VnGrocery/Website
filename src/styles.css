@@ -1,0 +1,45 @@
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #f8f9fc;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+}
+
+.nav-link.active {
+  color: #fff;
+  font-weight: 700;
+}
+
+.nav-link.active i {
+  color: #fff;
+}
+
+.sidebar-card img {
+  max-width: 6rem;
+}
+
+.inline-action-react {
+  min-width: 170px;
+}
+
+.table td,
+.table th {
+  vertical-align: middle;
+}
+
+.btn-group.flex-wrap > .btn,
+.btn-group-sm.flex-wrap > .btn {
+  margin-bottom: 0.5rem;
+}
+
+.card .badge {
+  text-transform: uppercase;
+}
