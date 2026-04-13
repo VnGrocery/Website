@@ -11,6 +11,7 @@ import { useToast } from "../components/ToastStack.jsx";
 import { useApi } from "../lib/api.jsx";
 import { labelOf, productStatuses, reportStatuses, shopStatuses } from "../lib/constants.js";
 import { formatDateTime, roundNumber, shortText } from "../lib/format.js";
+import { localizeProofHeadline, localizeProofSummary } from "../lib/proofI18n.js";
 
 export default function ShopDetailPage() {
   const api = useApi();
@@ -327,8 +328,8 @@ export default function ShopDetailPage() {
             {state.pledgeProof ? (
               <div className="card border-left-success shadow mt-3">
                 <div className="card-body">
-                  <h6 className="font-weight-bold text-success text-uppercase mb-2">{state.pledgeProof.proofHeadline}</h6>
-                  <p className="mb-3">{state.pledgeProof.proofSummary}</p>
+                  <h6 className="font-weight-bold text-success text-uppercase mb-2">{localizeProofHeadline(state.pledgeProof)}</h6>
+                  <p className="mb-3">{localizeProofSummary(state.pledgeProof)}</p>
                   <div className="small mb-1">Tình trạng dữ liệu: {state.pledgeProof.integrity?.integrityStatus || "Chưa có"}</div>
                   <div className="small mb-1">Tình trạng ghi nhận: {state.pledgeProof.integrity?.chainAnchorStatus || "Chưa có"}</div>
                   <div className="small mb-3">Lý do chưa khớp: {state.pledgeProof.integrity?.mismatchReason || "không có"}</div>
