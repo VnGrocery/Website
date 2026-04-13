@@ -70,11 +70,11 @@ export default function EventsPage() {
   return (
     <>
       <PageHeader
-        title="Events"
-        subtitle="Audit log with verification entrypoints"
+        title="Sự kiện"
+        subtitle="Nhật ký audit và các điểm vào để xác minh"
         actions={
           <Link className="btn btn-outline-primary btn-sm" to="/events/verify">
-            Verify resource
+            Xác minh tài nguyên
           </Link>
         }
       />
@@ -82,7 +82,7 @@ export default function EventsPage() {
 
       <div className="row">
         <div className="col-12 mb-4">
-          <Card title="Filters">
+          <Card title="Bộ lọc">
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -90,22 +90,22 @@ export default function EventsPage() {
               }}
             >
               <div className="form-row">
-                <FilterInput label="Resource type" value={filters.resourceType} onChange={(value) => setFilters((current) => ({ ...current, resourceType: value }))} />
-                <FilterInput label="Resource ID" value={filters.resourceId} onChange={(value) => setFilters((current) => ({ ...current, resourceId: value }))} />
-                <FilterInput label="Actor user ID" value={filters.actorUserId} onChange={(value) => setFilters((current) => ({ ...current, actorUserId: value }))} />
-                <FilterInput label="Action" value={filters.action} onChange={(value) => setFilters((current) => ({ ...current, action: value }))} />
+                <FilterInput label="Loại tài nguyên" value={filters.resourceType} onChange={(value) => setFilters((current) => ({ ...current, resourceType: value }))} />
+                <FilterInput label="Mã tài nguyên" value={filters.resourceId} onChange={(value) => setFilters((current) => ({ ...current, resourceId: value }))} />
+                <FilterInput label="Mã người thực hiện" value={filters.actorUserId} onChange={(value) => setFilters((current) => ({ ...current, actorUserId: value }))} />
+                <FilterInput label="Hành động" value={filters.action} onChange={(value) => setFilters((current) => ({ ...current, action: value }))} />
               </div>
               <div className="form-row">
-                <FilterInput label="Status" value={filters.status} onChange={(value) => setFilters((current) => ({ ...current, status: value }))} />
-                <FilterInput label="Min sequence" value={filters.minSequence} onChange={(value) => setFilters((current) => ({ ...current, minSequence: value }))} />
-                <FilterInput label="Max sequence" value={filters.maxSequence} onChange={(value) => setFilters((current) => ({ ...current, maxSequence: value }))} />
-                <DateFilter label="Created after" value={filters.createdAfter} onChange={(value) => setFilters((current) => ({ ...current, createdAfter: value }))} />
-                <DateFilter label="Created before" value={filters.createdBefore} onChange={(value) => setFilters((current) => ({ ...current, createdBefore: value }))} />
+                <FilterInput label="Trạng thái" value={filters.status} onChange={(value) => setFilters((current) => ({ ...current, status: value }))} />
+                <FilterInput label="Sequence nhỏ nhất" value={filters.minSequence} onChange={(value) => setFilters((current) => ({ ...current, minSequence: value }))} />
+                <FilterInput label="Sequence lớn nhất" value={filters.maxSequence} onChange={(value) => setFilters((current) => ({ ...current, maxSequence: value }))} />
+                <DateFilter label="Tạo sau" value={filters.createdAfter} onChange={(value) => setFilters((current) => ({ ...current, createdAfter: value }))} />
+                <DateFilter label="Tạo trước" value={filters.createdBefore} onChange={(value) => setFilters((current) => ({ ...current, createdBefore: value }))} />
               </div>
               <div className="mt-2">
-                <button type="submit" className="btn btn-primary mr-2">Apply</button>
+                <button type="submit" className="btn btn-primary mr-2">Áp dụng</button>
                 <button type="button" className="btn btn-outline-secondary" onClick={() => setSearchParams(defaultFilters)}>
-                  Reset
+                  Đặt lại
                 </button>
               </div>
             </form>
@@ -113,18 +113,18 @@ export default function EventsPage() {
         </div>
 
         <div className="col-12">
-          <Card title="Audit events" loading={state.loading}>
+          <Card title="Nhật ký sự kiện" loading={state.loading}>
             <div className="table-responsive">
               <table className="table table-bordered">
                 <thead>
                   <tr>
-                    <th>Event</th>
-                    <th>Actor</th>
-                    <th>Action</th>
-                    <th>Status</th>
+                    <th>Sự kiện</th>
+                    <th>Người thực hiện</th>
+                    <th>Hành động</th>
+                    <th>Trạng thái</th>
                     <th>Seq</th>
-                    <th>Created</th>
-                    <th>Actions</th>
+                    <th>Thời gian tạo</th>
+                    <th>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -143,13 +143,13 @@ export default function EventsPage() {
                         <td>
                           <div className="btn-group btn-group-sm flex-wrap">
                             <Link className="btn btn-outline-primary" to={`/events/${event.eventId}/verify`}>
-                              Verify event
+                              Xác minh sự kiện
                             </Link>
                             <Link
                               className="btn btn-outline-secondary"
                               to={`/events/verify?${buildQuery({ resourceType: event.resourceType, resourceId: event.resourceId })}`}
                             >
-                              Verify resource
+                              Xác minh tài nguyên
                             </Link>
                             <button
                               type="button"
@@ -161,7 +161,7 @@ export default function EventsPage() {
                                 }))
                               }
                             >
-                              Payload
+                              Nội dung
                             </button>
                           </div>
                         </td>
@@ -171,11 +171,11 @@ export default function EventsPage() {
                           <td colSpan="7">
                             <div className="row">
                               <div className="col-lg-6 mb-3">
-                                <div className="small text-muted mb-1">Signature</div>
+                                <div className="small text-muted mb-1">Chữ ký</div>
                                 <div className="text-monospace small break-all">{event.signature}</div>
                               </div>
                               <div className="col-lg-6 mb-3">
-                                <div className="small text-muted mb-1">Content SHA256</div>
+                                <div className="small text-muted mb-1">SHA256 nội dung</div>
                                 <div className="text-monospace small break-all">{event.contentSha256}</div>
                               </div>
                             </div>
@@ -187,7 +187,7 @@ export default function EventsPage() {
                   ))}
                 </tbody>
               </table>
-              {!state.loading && !state.items.length ? <EmptyState text="No events matched the current filters." /> : null}
+              {!state.loading && !state.items.length ? <EmptyState text="Không có sự kiện phù hợp bộ lọc hiện tại." /> : null}
             </div>
             <PaginationBar
               page={Number(filters.page || 1)}
@@ -196,7 +196,7 @@ export default function EventsPage() {
               onNext={() => setSearchParams(serializeFilters({ ...filters, page: String(Number(filters.page) + 1) }))}
               summary={
                 state.pagination
-                  ? `Page ${state.pagination.page} / ${state.pagination.totalPages}, total ${state.pagination.totalItems} events`
+                  ? `Trang ${state.pagination.page} / ${state.pagination.totalPages}, tổng ${state.pagination.totalItems} sự kiện`
                   : ""
               }
             />

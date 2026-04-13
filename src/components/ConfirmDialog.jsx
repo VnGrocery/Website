@@ -34,7 +34,7 @@ export function ConfirmProvider({ children }) {
             <div className="modal-dialog modal-dialog-centered" role="document">
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">{dialog.title || "Confirm action"}</h5>
+                  <h5 className="modal-title">{dialog.title || "Xác nhận thao tác"}</h5>
                   <button type="button" className="close" onClick={() => close(false)}>
                     <span aria-hidden="true">&times;</span>
                   </button>
@@ -44,10 +44,10 @@ export function ConfirmProvider({ children }) {
                 </div>
                 <div className="modal-footer">
                   <button type="button" className="btn btn-secondary" onClick={() => close(false)}>
-                    Cancel
+                    Hủy
                   </button>
                   <button type="button" className={`btn btn-${dialog.confirmTone || "primary"}`} onClick={() => close(true)}>
-                    {dialog.confirmLabel || "Confirm"}
+                    {dialog.confirmLabel || "Xác nhận"}
                   </button>
                 </div>
               </div>

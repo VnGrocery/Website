@@ -6,7 +6,7 @@ import PageHeader from "../components/PageHeader.jsx";
 import { useConfirm } from "../components/ConfirmDialog.jsx";
 import { useToast } from "../components/ToastStack.jsx";
 import { useApi } from "../lib/api.jsx";
-import { userRoles, userStatuses } from "../lib/constants.js";
+import { labelOf, userRoles, userStatuses } from "../lib/constants.js";
 import { formatDateTime } from "../lib/format.js";
 import { useSearchParams } from "react-router-dom";
 
@@ -44,8 +44,8 @@ export default function UsersPage() {
   async function mutateUser(user, path, body, successMessage) {
     const allowed = await confirm({
       title: "Confirm user change",
-      message: `${successMessage} for ${user.email}?`,
-      confirmLabel: "Apply",
+      message: `Áp dụng thay đổi cho ${user.email}?`,
+      confirmLabel: "Áp dụng",
       confirmTone: "primary",
     });
     if (!allowed) {
@@ -65,9 +65,9 @@ export default function UsersPage() {
 
   async function runKeyAction(user, mode) {
     const allowed = await confirm({
-      title: "Confirm key action",
-      message: `Run ${mode} key for ${user.email}?`,
-      confirmLabel: mode,
+      title: "Xác nhận thao tác khóa",
+      message: `Thực hiện ${labelOf(mode)} khóa cho ${user.email}?`,
+      confirmLabel: "Xác nhận",
       confirmTone: "warning",
     });
     if (!allowed) {
@@ -79,7 +79,7 @@ export default function UsersPage() {
       const result = await api.post(`/admin/users/${user.userId}/keys/${mode}`, { expectedVersion: user.version });
       await loadUsers();
       setState((current) => ({ ...current, busyKey: "", keyResult: result }));
-      toast.success(`Key ${mode} completed`);
+      toast.success(`Đã ${labelOf(mode).toLowerCase()} khóa`);
     } catch (error) {
       setState((current) => ({ ...current, busyKey: "", error: error.message }));
     }
@@ -87,18 +87,18 @@ export default function UsersPage() {
 
   return (
     <>
-      <PageHeader title="Users" subtitle="Role, status and key management" />
+      <PageHeader title="Người dùng" subtitle="Quản lý vai trò, trạng thái và khóa tài khoản" />
       <AlertBanner tone="danger" text={state.error} />
 
       <div className="row">
         <div className="col-12 mb-4">
-          <Card title="Filters">
+          <Card title="Bộ lọc">
             <div className="form-row align-items-end">
               <div className="col-md-3 mb-3">
-                <SelectField label="Role" value={filters.role} options={["", ...userRoles]} onChange={(value) => setSearchParams(compactQuery({ ...filters, role: value }))} />
+                <SelectField label="Vai trò" value={filters.role} options={["", ...userRoles]} onChange={(value) => setSearchParams(compactQuery({ ...filters, role: value }))} />
               </div>
               <div className="col-md-3 mb-3">
-                <SelectField label="Status" value={filters.status} options={["", ...userStatuses]} onChange={(value) => setSearchParams(compactQuery({ ...filters, status: value }))} />
+                <SelectField label="Trạng thái" value={filters.status} options={["", ...userStatuses]} onChange={(value) => setSearchParams(compactQuery({ ...filters, status: value }))} />
               </div>
             </div>
           </Card>
@@ -106,12 +106,12 @@ export default function UsersPage() {
 
         {state.keyResult ? (
           <div className="col-12 mb-4">
-            <Card title="Last key action result">
+            <Card title="Kết quả thao tác khóa gần nhất">
               <div className="row">
-                <Metric label="User ID" value={state.keyResult.userId} />
-                <Metric label="Algorithm" value={state.keyResult.keyAlgorithm} />
-                <Metric label="Vault path" value={state.keyResult.vaultKeyPath} />
-                <Metric label="Version" value={state.keyResult.version} />
+                <Metric label="Mã người dùng" value={state.keyResult.userId} />
+                <Metric label="Thuật toán" value={state.keyResult.keyAlgorithm} />
+                <Metric label="Đường dẫn Vault" value={state.keyResult.vaultKeyPath} />
+                <Metric label="Phiên bản" value={state.keyResult.version} />
                 <Metric label="Public key" value={<div className="text-monospace small break-all">{state.keyResult.publicKey}</div>} wide />
               </div>
             </Card>
@@ -119,17 +119,17 @@ export default function UsersPage() {
         ) : null}
 
         <div className="col-12">
-          <Card title="Users" loading={state.loading}>
+          <Card title="Danh sách người dùng" loading={state.loading}>
             <div className="table-responsive">
               <table className="table table-bordered">
                 <thead>
                   <tr>
-                    <th>User</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Version</th>
-                    <th>Updated</th>
-                    <th>Actions</th>
+                    <th>Người dùng</th>
+                    <th>Vai trò</th>
+                    <th>Trạng thái</th>
+                    <th>Phiên bản</th>
+                    <th>Cập nhật</th>
+                    <th>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -143,18 +143,18 @@ export default function UsersPage() {
                         <InlineSelectAction
                           value={user.role}
                           options={userRoles}
-                          buttonLabel="Update role"
+                          buttonLabel="Cập nhật vai trò"
                           busy={state.busyKey === `${user.userId}:role`}
-                          onSubmit={(value) => mutateUser(user, "role", { expectedVersion: user.version, role: value }, "Role updated")}
+                          onSubmit={(value) => mutateUser(user, "role", { expectedVersion: user.version, role: value }, "Đã cập nhật vai trò")}
                         />
                       </td>
                       <td>
                         <InlineSelectAction
                           value={user.status}
                           options={userStatuses}
-                          buttonLabel="Update status"
+                          buttonLabel="Cập nhật trạng thái"
                           busy={state.busyKey === `${user.userId}:status`}
-                          onSubmit={(value) => mutateUser(user, "status", { expectedVersion: user.version, status: value }, "Status updated")}
+                          onSubmit={(value) => mutateUser(user, "status", { expectedVersion: user.version, status: value }, "Đã cập nhật trạng thái")}
                         />
                       </td>
                       <td>v{user.version}</td>
@@ -162,13 +162,13 @@ export default function UsersPage() {
                       <td>
                         <div className="btn-group-vertical btn-block">
                           <button type="button" className="btn btn-outline-primary btn-sm mb-2" onClick={() => runKeyAction(user, "rotate")}>
-                            Rotate key
+                            Xoay khóa
                           </button>
                           <button type="button" className="btn btn-outline-secondary btn-sm mb-2" onClick={() => runKeyAction(user, "recover")}>
-                            Recover key
+                            Khôi phục khóa
                           </button>
                           <button type="button" className="btn btn-outline-info btn-sm" onClick={() => runKeyAction(user, "backfill")}>
-                            Backfill key
+                            Bổ sung khóa
                           </button>
                         </div>
                       </td>
@@ -176,7 +176,7 @@ export default function UsersPage() {
                   ))}
                 </tbody>
               </table>
-              {!state.loading && !state.items.length ? <EmptyState text="No users matched the current filters." /> : null}
+              {!state.loading && !state.items.length ? <EmptyState text="Không có người dùng phù hợp bộ lọc hiện tại." /> : null}
             </div>
           </Card>
         </div>
@@ -192,7 +192,7 @@ function SelectField({ label, value, options, onChange }) {
       <select className="form-control" value={value} onChange={(event) => onChange(event.target.value)}>
         {options.map((option) => (
           <option key={option || "__empty"} value={option}>
-            {option || "All"}
+            {labelOf(option)}
           </option>
         ))}
       </select>

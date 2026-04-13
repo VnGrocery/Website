@@ -15,12 +15,12 @@ export default function Layout() {
 
   const navItems = useMemo(
     () => [
-      { to: "/", label: "Dashboard", icon: "tachometer-alt", end: true },
-      { to: "/users", label: "Users", icon: "users-cog" },
-      { to: "/shops", label: "Shops", icon: "store-alt" },
-      { to: "/events", label: "Events", icon: "stream" },
-      { to: "/account", label: "Account", icon: "user-cog" },
-      { to: "/tools", label: "Tools", icon: "shield-alt" },
+      { to: "/", label: "Tổng quan", icon: "tachometer-alt", end: true },
+      { to: "/users", label: "Người dùng", icon: "users-cog" },
+      { to: "/shops", label: "Cửa hàng", icon: "store-alt" },
+      { to: "/events", label: "Sự kiện", icon: "stream" },
+      { to: "/account", label: "Tài khoản", icon: "user-cog" },
+      { to: "/tools", label: "Công cụ", icon: "shield-alt" },
     ],
     [],
   );
@@ -114,9 +114,9 @@ export default function Layout() {
               <i className="fa fa-bars" />
             </button>
             <div className="mr-auto">
-              <div className="text-xs font-weight-bold text-primary text-uppercase mb-1">Operations Console</div>
+              <div className="text-xs font-weight-bold text-primary text-uppercase mb-1">Bảng điều hành</div>
               <div className="h5 mb-0 text-gray-800">
-                {location.pathname.startsWith("/events") ? "Audit and verification" : "Admin control panel"}
+                {location.pathname.startsWith("/events") ? "Kiểm tra và xác minh" : "Trang quản trị"}
               </div>
             </div>
             <div className="ml-auto d-flex align-items-center topbar-user-block">
@@ -124,11 +124,11 @@ export default function Layout() {
               <div className="topbar-divider d-none d-sm-block" />
               <div className="nav-item dropdown no-arrow d-flex align-items-center">
                 <div className="mr-3 text-right d-none d-lg-inline">
-                  <div className="small text-gray-500">Signed in</div>
+                  <div className="small text-gray-500">Đang đăng nhập</div>
                   <div className="font-weight-bold text-gray-800">{me?.email || session.email || "admin"}</div>
                 </div>
                 <button type="button" className="btn btn-outline-primary btn-sm ml-3" onClick={logout}>
-                  Sign out
+                  Đăng xuất
                 </button>
               </div>
             </div>

@@ -40,7 +40,7 @@ export default function AccountPage() {
     setError("");
     try {
       const response = await api.post("/me/password", form);
-      toast.success(response.status || "Password changed");
+      toast.success(response.status || "Đổi mật khẩu thành công");
       setForm({ currentPassword: "", newPassword: "" });
     } catch (submitError) {
       setError(submitError.message);
@@ -51,14 +51,14 @@ export default function AccountPage() {
 
   return (
     <>
-      <PageHeader title="Account" subtitle="Session profile and password management" />
+      <PageHeader title="Tài khoản" subtitle="Thông tin phiên đăng nhập và đổi mật khẩu" />
       <AlertBanner tone="danger" text={error} />
 
       <div className="row">
         <div className="col-lg-6 mb-4">
-          <Card title="Profile">
+          <Card title="Thông tin tài khoản">
             <div className="mb-3">
-              <div className="small text-muted">User ID</div>
+              <div className="small text-muted">Mã người dùng</div>
               <div className="font-weight-bold text-gray-800">{profile?.userId || "n/a"}</div>
             </div>
             <div>
@@ -69,10 +69,10 @@ export default function AccountPage() {
         </div>
 
         <div className="col-lg-6 mb-4">
-          <Card title="Change password">
+          <Card title="Đổi mật khẩu">
             <form onSubmit={handleChangePassword}>
               <div className="form-group">
-                <label>Current password</label>
+                <label>Mật khẩu hiện tại</label>
                 <input
                   className="form-control"
                   type="password"
@@ -82,7 +82,7 @@ export default function AccountPage() {
                 />
               </div>
               <div className="form-group">
-                <label>New password</label>
+                <label>Mật khẩu mới</label>
                 <input
                   className="form-control"
                   type="password"
@@ -92,7 +92,7 @@ export default function AccountPage() {
                 />
               </div>
               <button type="submit" className="btn btn-primary" disabled={busy}>
-                {busy ? "Saving..." : "Change password"}
+                {busy ? "Đang lưu..." : "Đổi mật khẩu"}
               </button>
             </form>
           </Card>

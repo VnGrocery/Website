@@ -55,15 +55,15 @@ export default function LoginPage({ session }) {
               <div className="card-body p-0">
                 <div className="p-5">
                   <div className="text-center">
-                    <h1 className="h4 text-gray-900 mb-4">VNGrocery Admin</h1>
-                    <p className="mb-4">Đăng nhập bằng tài khoản admin để dùng web quản trị.</p>
+                    <h1 className="h4 text-gray-900 mb-4">Quản trị VNGrocery</h1>
+                    <p className="mb-4">Đăng nhập bằng tài khoản quản trị để sử dụng hệ thống.</p>
                   </div>
                   <form className="user" onSubmit={handleSubmit}>
                     <div className="form-group">
                       <input
                         className="form-control form-control-user"
                         type="text"
-                        placeholder="API base URL"
+                        placeholder="Địa chỉ API gốc"
                         value={form.apiBaseUrl}
                         onChange={(event) => setForm({ ...form, apiBaseUrl: event.target.value })}
                         required
@@ -83,7 +83,7 @@ export default function LoginPage({ session }) {
                       <input
                         className="form-control form-control-user"
                         type="password"
-                        placeholder="Password"
+                        placeholder="Mật khẩu"
                         value={form.password}
                         onChange={(event) => setForm({ ...form, password: event.target.value })}
                         required
@@ -91,13 +91,13 @@ export default function LoginPage({ session }) {
                     </div>
                     <AlertBanner tone="danger" text={error} compact />
                     <button type="submit" className="btn btn-primary btn-user btn-block" disabled={busy}>
-                      {busy ? "Signing in..." : "Sign in"}
+                      {busy ? "Đang đăng nhập..." : "Đăng nhập"}
                     </button>
                   </form>
                   <hr />
                   <div className="text-center">
                     <button type="button" className="btn btn-link small" onClick={() => navigate("/forgot-password")}>
-                      Forgot password?
+                      Quên mật khẩu?
                     </button>
                   </div>
                 </div>

@@ -40,12 +40,12 @@ export default function VerifyResourcePage() {
 
   return (
     <>
-      <PageHeader title="Verify Resource" subtitle="Validate the audit chain for a resource" />
+      <PageHeader title="Xác minh tài nguyên" subtitle="Kiểm tra toàn bộ chuỗi audit của một tài nguyên" />
       <AlertBanner tone="danger" text={state.error} />
 
       <div className="row">
         <div className="col-12 mb-4">
-          <Card title="Lookup">
+          <Card title="Tra cứu">
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -54,15 +54,15 @@ export default function VerifyResourcePage() {
             >
               <div className="form-row align-items-end">
                 <div className="col-md-4 mb-3">
-                  <label>Resource type</label>
+                  <label>Loại tài nguyên</label>
                   <input className="form-control" value={resourceType} onChange={(event) => setResourceType(event.target.value)} required />
                 </div>
                 <div className="col-md-4 mb-3">
-                  <label>Resource ID</label>
+                  <label>Mã tài nguyên</label>
                   <input className="form-control" value={resourceId} onChange={(event) => setResourceId(event.target.value)} required />
                 </div>
                 <div className="col-md-2 mb-3">
-                  <button type="submit" className="btn btn-primary btn-block">Verify</button>
+                  <button type="submit" className="btn btn-primary btn-block">Xác minh</button>
                 </div>
               </div>
             </form>
@@ -70,30 +70,30 @@ export default function VerifyResourcePage() {
         </div>
 
         <div className="col-12">
-          <Card title="Verification result" loading={state.loading}>
+          <Card title="Kết quả xác minh" loading={state.loading}>
             {state.result ? (
               <>
                 <div className="row mb-3">
                   <div className="col-md-3">
-                    <div className="small text-muted">Resource type</div>
+                    <div className="small text-muted">Loại tài nguyên</div>
                     <div className="font-weight-bold text-gray-800">{state.result.resourceType}</div>
                   </div>
                   <div className="col-md-3">
-                    <div className="small text-muted">Resource ID</div>
+                    <div className="small text-muted">Mã tài nguyên</div>
                     <div className="font-weight-bold text-gray-800">{state.result.resourceId}</div>
                   </div>
                   <div className="col-md-3">
-                    <div className="small text-muted">Events</div>
+                    <div className="small text-muted">Số sự kiện</div>
                     <div className="font-weight-bold text-gray-800">{state.result.eventCount}</div>
                   </div>
                   <div className="col-md-3">
-                    <div className="small text-muted">Verified</div>
+                    <div className="small text-muted">Đã xác minh</div>
                     <div><StatusBadge value={String(state.result.verified)} tone={state.result.verified ? "success" : "danger"} /></div>
                   </div>
                 </div>
 
                 <DataTable
-                  columns={["Event", "Seq", "Content hash", "Signature", "Chain", "Verified", "Open"]}
+                  columns={["Sự kiện", "Seq", "Hash nội dung", "Chữ ký", "Chuỗi", "Xác minh", "Mở"]}
                   rows={(state.result.events || []).map((event) => [
                     event.eventId,
                     event.sequence,
@@ -102,13 +102,13 @@ export default function VerifyResourcePage() {
                     <StatusBadge key={`${event.eventId}-chain`} value={String(event.chainLinkValid)} tone={event.chainLinkValid ? "success" : "danger"} />,
                     <StatusBadge key={`${event.eventId}-verified`} value={String(event.verified)} tone={event.verified ? "success" : "danger"} />,
                     <Link key={`${event.eventId}-open`} className="btn btn-outline-primary btn-sm" to={`/events/${event.eventId}/verify`}>
-                      Open
+                      Mở
                     </Link>,
                   ])}
                 />
               </>
             ) : (
-              <div className="text-muted">Enter a resource type and ID to verify.</div>
+              <div className="text-muted">Nhập loại tài nguyên và mã tài nguyên để xác minh.</div>
             )}
           </Card>
         </div>

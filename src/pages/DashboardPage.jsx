@@ -46,42 +46,42 @@ export default function DashboardPage() {
 
   return (
     <>
-      <PageHeader title="Dashboard" subtitle="Quick overview of admin state" />
+      <PageHeader title="Tổng quan" subtitle="Toàn cảnh nhanh về trạng thái hệ thống" />
       <AlertBanner tone="danger" text={state.error} />
 
       <div className="row">
-        <MetricCard color="primary" title="Users" value={state.users.length} hint={`${activeUsers} active`} icon="users" />
-        <MetricCard color="success" title="Shops" value={state.shops.length} hint={`${pendingShops} pending`} icon="store" />
-        <MetricCard color="warning" title="Risk Flags" value={riskFlags} hint="High risk checks" icon="exclamation-triangle" />
-        <MetricCard color="info" title="Anchored" value={anchored} hint="Shops with pledges" icon="link" />
+        <MetricCard color="primary" title="Người dùng" value={state.users.length} hint={`${activeUsers} đang hoạt động`} icon="users" />
+        <MetricCard color="success" title="Cửa hàng" value={state.shops.length} hint={`${pendingShops} chờ duyệt`} icon="store" />
+        <MetricCard color="warning" title="Cảnh báo" value={riskFlags} hint="Lượt kiểm tra rủi ro cao" icon="exclamation-triangle" />
+        <MetricCard color="info" title="Đã neo" value={anchored} hint="Cửa hàng có pledge" icon="link" />
       </div>
 
       <div className="row">
         <div className="col-lg-6 mb-4">
-          <Card title="Recent users" loading={state.loading}>
+          <Card title="Người dùng gần đây" loading={state.loading}>
             <DataTable
-              columns={["Email", "Role", "Status", "Updated"]}
+              columns={["Email", "Vai trò", "Trạng thái", "Cập nhật"]}
               rows={state.users.slice(0, 6).map((user) => [
                 user.email,
                 <StatusBadge key={`${user.userId}-role`} value={user.role} tone="secondary" />,
                 <StatusBadge key={`${user.userId}-status`} value={user.status} />,
                 formatDateTime(user.updatedAt),
               ])}
-              emptyText="No users found"
+              emptyText="Không tìm thấy người dùng"
             />
           </Card>
         </div>
         <div className="col-lg-6 mb-4">
-          <Card title="Shop watchlist" loading={state.loading}>
+          <Card title="Cửa hàng cần theo dõi" loading={state.loading}>
             <DataTable
-              columns={["Shop", "Status", "Trust", "Risk"]}
+              columns={["Cửa hàng", "Trạng thái", "Độ tin cậy", "Rủi ro"]}
               rows={state.shops.slice(0, 6).map((shop) => [
                 shop.name,
                 <StatusBadge key={`${shop.shopId}-status`} value={shop.status} />,
                 `${roundNumber(shop.trustSummary?.score)} / ${shop.trustSummary?.grade || "n/a"}`,
                 `${shop.trustSummary?.highRiskCheckCount || 0} alerts`,
               ])}
-              emptyText="No shops found"
+              emptyText="Không tìm thấy cửa hàng"
             />
           </Card>
         </div>

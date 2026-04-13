@@ -9,7 +9,7 @@ import StatusBadge from "../components/StatusBadge.jsx";
 import { useConfirm } from "../components/ConfirmDialog.jsx";
 import { useToast } from "../components/ToastStack.jsx";
 import { useApi } from "../lib/api.jsx";
-import { productStatuses, reportStatuses, shopStatuses } from "../lib/constants.js";
+import { labelOf, productStatuses, reportStatuses, shopStatuses } from "../lib/constants.js";
 import { formatDateTime, roundNumber, shortText } from "../lib/format.js";
 
 export default function ShopDetailPage() {
@@ -72,13 +72,13 @@ export default function ShopDetailPage() {
 
   async function moderateShop(status, moderationNote) {
     if (!state.shop?.version) {
-      setState((current) => ({ ...current, error: "Backend is not returning shop version, moderation cannot be submitted safely." }));
+      setState((current) => ({ ...current, error: "Backend chưa trả về phiên bản của shop nên không thể gửi kiểm duyệt an toàn." }));
       return;
     }
     const allowed = await confirm({
-      title: "Confirm shop moderation",
-      message: `Change shop status to ${status}?`,
-      confirmLabel: "Apply",
+      title: "Xác nhận kiểm duyệt cửa hàng",
+      message: `Chuyển trạng thái cửa hàng sang ${labelOf(status)}?`,
+      confirmLabel: "Áp dụng",
       confirmTone: "warning",
     });
     if (!allowed) return;
@@ -91,7 +91,7 @@ export default function ShopDetailPage() {
         moderationNote,
       });
       setState((current) => ({ ...current, saving: "", shop }));
-      toast.success("Shop moderation updated");
+      toast.success("Đã cập nhật kiểm duyệt cửa hàng");
     } catch (error) {
       setState((current) => ({ ...current, saving: "", error: error.message }));
     }
@@ -99,9 +99,9 @@ export default function ShopDetailPage() {
 
   async function moderateProduct(product, status, moderationNote) {
     const allowed = await confirm({
-      title: "Confirm product moderation",
-      message: `Change product ${product.name} to ${status}?`,
-      confirmLabel: "Apply",
+      title: "Xác nhận kiểm duyệt sản phẩm",
+      message: `Chuyển sản phẩm ${product.name} sang ${labelOf(status)}?`,
+      confirmLabel: "Áp dụng",
       confirmTone: "warning",
     });
     if (!allowed) return;
@@ -118,7 +118,7 @@ export default function ShopDetailPage() {
         saving: "",
         products: current.products.map((item) => (item.productId === updated.productId ? updated : item)),
       }));
-      toast.success("Product moderation updated");
+      toast.success("Đã cập nhật kiểm duyệt sản phẩm");
     } catch (error) {
       setState((current) => ({ ...current, saving: "", error: error.message }));
     }
@@ -126,9 +126,9 @@ export default function ShopDetailPage() {
 
   async function moderateReport(report, status, moderationNote) {
     const allowed = await confirm({
-      title: "Confirm report moderation",
-      message: `Change report ${report.reportId} to ${status}?`,
-      confirmLabel: "Apply",
+      title: "Xác nhận kiểm duyệt báo cáo",
+      message: `Chuyển báo cáo ${report.reportId} sang ${labelOf(status)}?`,
+      confirmLabel: "Áp dụng",
       confirmTone: "warning",
     });
     if (!allowed) return;
@@ -150,7 +150,7 @@ export default function ShopDetailPage() {
           ),
         },
       }));
-      toast.success("Freshness report updated");
+      toast.success("Đã cập nhật báo cáo độ tươi");
     } catch (error) {
       setState((current) => ({ ...current, saving: "", error: error.message }));
     }
@@ -168,9 +168,9 @@ export default function ShopDetailPage() {
 
   async function runIntegrityAction(pledge, mode) {
     const allowed = await confirm({
-      title: `Confirm ${mode}`,
-      message: `${mode} integrity for pledge ${pledge.pledgeId}?`,
-      confirmLabel: mode,
+      title: `Xác nhận ${labelOf(mode).toLowerCase()}`,
+      message: `${labelOf(mode)} dữ liệu toàn vẹn cho pledge ${pledge.pledgeId}?`,
+      confirmLabel: "Xác nhận",
       confirmTone: mode === "revoke" ? "danger" : "success",
     });
     if (!allowed) return;
@@ -187,7 +187,7 @@ export default function ShopDetailPage() {
         saving: "",
         pledges: current.pledges.map((item) => (item.pledgeId === updated.pledgeId ? updated : item)),
       }));
-      toast.success(`Pledge ${mode} completed`);
+      toast.success(`Đã ${labelOf(mode).toLowerCase()} pledge`);
     } catch (error) {
       setState((current) => ({ ...current, saving: "", error: error.message }));
     }
@@ -195,55 +195,55 @@ export default function ShopDetailPage() {
 
   return (
     <>
-      <PageHeader title={state.shop?.name || shopId} subtitle="Shop moderation, products, reviews and proof" />
+      <PageHeader title={state.shop?.name || shopId} subtitle="Kiểm duyệt cửa hàng, sản phẩm, đánh giá và proof" />
       <AlertBanner tone="danger" text={state.error} />
 
       <div className="row">
         <div className="col-12 mb-4">
-          <Card title="Shop moderation" loading={state.loading}>
+          <Card title="Kiểm duyệt cửa hàng" loading={state.loading}>
             {state.shop ? (
               <ActionForm
                 currentValue={state.shop.status}
                 options={shopStatuses}
-                buttonLabel={state.saving === "shop" ? "Saving..." : "Apply moderation"}
+                buttonLabel={state.saving === "shop" ? "Đang lưu..." : "Áp dụng kiểm duyệt"}
                 disabled={state.saving === "shop" || !state.shop.version}
                 summary={[
-                  ["Owner", state.shop.ownerUserId],
-                  ["Trust", `${roundNumber(state.shop.trustSummary?.score)} / ${state.shop.trustSummary?.grade || "n/a"}`],
-                  ["Current status", state.shop.status],
-                  ["Rating", `${roundNumber(state.shop.ratingSummary?.averageRating)} (${state.shop.ratingSummary?.ratingCount || 0})`],
+                  ["Chủ sở hữu", state.shop.ownerUserId],
+                  ["Độ tin cậy", `${roundNumber(state.shop.trustSummary?.score)} / ${state.shop.trustSummary?.grade || "n/a"}`],
+                  ["Trạng thái hiện tại", labelOf(state.shop.status)],
+                  ["Đánh giá", `${roundNumber(state.shop.ratingSummary?.averageRating)} (${state.shop.ratingSummary?.ratingCount || 0})`],
                 ]}
                 onSubmit={({ value, note }) => moderateShop(value, note)}
               />
             ) : null}
-            {!state.shop?.version ? <div className="small text-warning mt-3">Shop version is missing from backend response. Shop moderation is disabled until backend exposes `version`.</div> : null}
+            {!state.shop?.version ? <div className="small text-warning mt-3">Backend chưa trả về `version` của shop. Tạm khóa thao tác kiểm duyệt cửa hàng cho tới khi API bổ sung trường này.</div> : null}
           </Card>
         </div>
 
         <div className="col-12 mb-4">
-          <Card title="Reviews" loading={state.loading}>
+          <Card title="Đánh giá" loading={state.loading}>
             <DataTable
-              columns={["Reviewer", "Rating", "Status", "Updated", "Comment"]}
+              columns={["Người đánh giá", "Điểm", "Trạng thái", "Cập nhật", "Bình luận"]}
               rows={state.reviews.map((review) => [
                 review.reviewerUserId,
                 review.rating,
                 <StatusBadge key={`${review.reviewId}-status`} value={review.status} />,
                 formatDateTime(review.updatedAt),
-                review.comment || "No comment",
+                review.comment || "Không có bình luận",
               ])}
-              emptyText="No reviews for this shop."
+              emptyText="Không có đánh giá cho cửa hàng này."
             />
           </Card>
         </div>
 
         <div className="col-12 mb-4">
-          <Card title="Products" loading={state.loading}>
+          <Card title="Sản phẩm" loading={state.loading}>
             {state.products.map((product) => (
               <div className="card shadow-sm mb-3" key={product.productId}>
                 <div className="card-header py-3 d-flex justify-content-between align-items-center">
                   <div>
                     <h6 className="m-0 font-weight-bold text-primary">{product.name}</h6>
-                    <div className="small text-muted">{product.category || "No category"}</div>
+                    <div className="small text-muted">{product.category || "Không có danh mục"}</div>
                   </div>
                   <StatusBadge value={product.status} />
                 </div>
@@ -251,53 +251,53 @@ export default function ShopDetailPage() {
                   <ActionForm
                     currentValue={product.status}
                     options={productStatuses}
-                    buttonLabel={state.saving === product.productId ? "Saving..." : "Apply product moderation"}
+                    buttonLabel={state.saving === product.productId ? "Đang lưu..." : "Áp dụng kiểm duyệt sản phẩm"}
                     disabled={state.saving === product.productId}
                     summary={[
-                      ["Freshness", roundNumber(product.freshnessScore)],
-                      ["Price", `${roundNumber(product.price)} ${product.currency || ""}`],
-                      ["Tags", (product.tags || []).join(", ") || "none"],
+                      ["Độ tươi", roundNumber(product.freshnessScore)],
+                      ["Giá", `${roundNumber(product.price)} ${product.currency || ""}`],
+                      ["Nhãn", (product.tags || []).join(", ") || "không có"],
                     ]}
                     onSubmit={({ value, note }) => moderateProduct(product, value, note)}
                   />
 
                   <hr />
 
-                  <h6 className="font-weight-bold text-gray-800 mb-3">Freshness reports</h6>
+                  <h6 className="font-weight-bold text-gray-800 mb-3">Báo cáo độ tươi</h6>
                   {(state.reportsByProduct[product.productId] || []).map((report) => (
                     <div className="border rounded p-3 mb-3 bg-light" key={report.reportId}>
                       <div className="d-flex justify-content-between align-items-start mb-2">
                         <div>
                           <div className="font-weight-bold text-gray-900">{report.reportId}</div>
-                          <div className="small text-muted">{report.comment || "No comment"}</div>
+                            <div className="small text-muted">{report.comment || "Không có bình luận"}</div>
                         </div>
                         <StatusBadge value={report.status} />
                       </div>
                       <ActionForm
                         currentValue={report.status}
                         options={reportStatuses}
-                        buttonLabel={state.saving === report.reportId ? "Saving..." : "Apply report moderation"}
+                        buttonLabel={state.saving === report.reportId ? "Đang lưu..." : "Áp dụng kiểm duyệt báo cáo"}
                         disabled={state.saving === report.reportId}
                         summary={[
-                          ["Score", roundNumber(report.score)],
-                          ["Category", report.category || "n/a"],
-                          ["Confidence", roundNumber(report.confidence)],
-                          ["Updated", formatDateTime(report.updatedAt)],
+                          ["Điểm", roundNumber(report.score)],
+                          ["Danh mục", report.category || "n/a"],
+                          ["Độ tin cậy", roundNumber(report.confidence)],
+                          ["Cập nhật", formatDateTime(report.updatedAt)],
                         ]}
                         onSubmit={({ value, note }) => moderateReport(report, value, note)}
                       />
                     </div>
                   ))}
-                  {!(state.reportsByProduct[product.productId] || []).length ? <div className="small text-muted">No freshness reports for this product.</div> : null}
+                  {!(state.reportsByProduct[product.productId] || []).length ? <div className="small text-muted">Không có báo cáo độ tươi cho sản phẩm này.</div> : null}
                 </div>
               </div>
             ))}
-            {!state.loading && !state.products.length ? <EmptyState text="This shop has no products." /> : null}
+            {!state.loading && !state.products.length ? <EmptyState text="Cửa hàng này chưa có sản phẩm." /> : null}
           </Card>
         </div>
 
         <div className="col-12 mb-4">
-          <Card title="Pledges and proof" loading={state.loading}>
+          <Card title="Pledge và proof" loading={state.loading}>
             <div className="row">
               {state.pledges.map((pledge) => (
                 <div className="col-lg-6 mb-4" key={pledge.pledgeId}>
@@ -307,31 +307,31 @@ export default function ShopDetailPage() {
                         <div className="font-weight-bold text-info text-uppercase small">{pledge.pledgeId}</div>
                         <StatusBadge value={pledge.integrityStatus} />
                       </div>
-                      <div className="small mb-1">Category: {pledge.category}</div>
-                      <div className="small mb-1">Score: {roundNumber(pledge.score)}</div>
-                      <div className="small mb-1">Anchor: {pledge.chainAnchorStatus || "n/a"}</div>
-                      <div className="small mb-1">Created by: {pledge.createdByUserId}</div>
+                      <div className="small mb-1">Danh mục: {pledge.category}</div>
+                      <div className="small mb-1">Điểm: {roundNumber(pledge.score)}</div>
+                      <div className="small mb-1">Neo chuỗi: {pledge.chainAnchorStatus || "n/a"}</div>
+                      <div className="small mb-1">Tạo bởi: {pledge.createdByUserId}</div>
                       <div className="small mb-3">Hash: {shortText(pledge.dataHash)}</div>
                       <div className="btn-group btn-group-sm flex-wrap">
-                        <button type="button" className="btn btn-outline-primary" onClick={() => viewProof(pledge.pledgeId)}>View proof</button>
-                        <button type="button" className="btn btn-outline-success" onClick={() => runIntegrityAction(pledge, "reanchor")}>Reanchor</button>
-                        <button type="button" className="btn btn-outline-danger" onClick={() => runIntegrityAction(pledge, "revoke")}>Revoke</button>
+                        <button type="button" className="btn btn-outline-primary" onClick={() => viewProof(pledge.pledgeId)}>Xem proof</button>
+                        <button type="button" className="btn btn-outline-success" onClick={() => runIntegrityAction(pledge, "reanchor")}>Neo lại</button>
+                        <button type="button" className="btn btn-outline-danger" onClick={() => runIntegrityAction(pledge, "revoke")}>Thu hồi</button>
                       </div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-            {!state.loading && !state.pledges.length ? <EmptyState text="No pledge history for this shop." /> : null}
+            {!state.loading && !state.pledges.length ? <EmptyState text="Không có lịch sử pledge cho cửa hàng này." /> : null}
 
             {state.pledgeProof ? (
               <div className="card border-left-success shadow mt-3">
                 <div className="card-body">
                   <h6 className="font-weight-bold text-success text-uppercase mb-2">{state.pledgeProof.proofHeadline}</h6>
                   <p className="mb-3">{state.pledgeProof.proofSummary}</p>
-                  <div className="small mb-1">Integrity status: {state.pledgeProof.integrity?.integrityStatus || "n/a"}</div>
-                  <div className="small mb-1">Chain anchor: {state.pledgeProof.integrity?.chainAnchorStatus || "n/a"}</div>
-                  <div className="small mb-3">Mismatch reason: {state.pledgeProof.integrity?.mismatchReason || "none"}</div>
+                  <div className="small mb-1">Trạng thái toàn vẹn: {state.pledgeProof.integrity?.integrityStatus || "n/a"}</div>
+                  <div className="small mb-1">Trạng thái neo chuỗi: {state.pledgeProof.integrity?.chainAnchorStatus || "n/a"}</div>
+                  <div className="small mb-3">Lý do lệch: {state.pledgeProof.integrity?.mismatchReason || "không có"}</div>
                   <div className="d-flex flex-wrap">
                     {(state.pledgeProof.recommendedActions || []).map((item) => (
                       <span className="badge badge-light border mr-2 mb-2" key={item}>{item}</span>
@@ -372,15 +372,15 @@ function ActionForm({ currentValue, options, buttonLabel, disabled, summary, onS
       </div>
       <div className="form-row align-items-end">
         <div className="col-md-3 mb-3">
-          <label>Status</label>
+          <label>Trạng thái</label>
           <select className="form-control" value={value} onChange={(event) => setValue(event.target.value)}>
             {options.map((option) => (
-              <option key={option} value={option}>{option}</option>
+              <option key={option} value={option}>{labelOf(option)}</option>
             ))}
           </select>
         </div>
         <div className="col-md-7 mb-3">
-          <label>Moderation note</label>
+          <label>Ghi chú kiểm duyệt</label>
           <textarea className="form-control" rows="2" value={note} onChange={(event) => setNote(event.target.value)} />
         </div>
         <div className="col-md-2 mb-3">

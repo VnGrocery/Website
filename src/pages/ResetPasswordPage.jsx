@@ -51,12 +51,12 @@ export default function ResetPasswordPage({ session }) {
             <div className="card shadow-lg my-5">
               <div className="card-body p-5">
                 <div className="text-center">
-                  <h1 className="h4 text-gray-900 mb-2">Reset Password</h1>
-                  <p className="mb-4">Đặt lại mật khẩu bằng reset token.</p>
+                  <h1 className="h4 text-gray-900 mb-2">Đặt lại mật khẩu</h1>
+                  <p className="mb-4">Thiết lập mật khẩu mới bằng mã đặt lại.</p>
                 </div>
                 <form onSubmit={handleSubmit}>
                   <div className="form-group">
-                    <label>API base URL</label>
+                    <label>Địa chỉ API gốc</label>
                     <input
                       className="form-control"
                       value={form.apiBaseUrl}
@@ -65,7 +65,7 @@ export default function ResetPasswordPage({ session }) {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Reset token</label>
+                    <label>Mã đặt lại</label>
                     <input
                       className="form-control"
                       value={form.resetToken}
@@ -74,7 +74,7 @@ export default function ResetPasswordPage({ session }) {
                     />
                   </div>
                   <div className="form-group">
-                    <label>New password</label>
+                    <label>Mật khẩu mới</label>
                     <input
                       className="form-control"
                       type="password"
@@ -84,15 +84,15 @@ export default function ResetPasswordPage({ session }) {
                     />
                   </div>
                   <AlertBanner tone="danger" text={error} compact />
-                  <AlertBanner tone="success" text={result ? `Status: ${result}` : ""} compact />
+                  <AlertBanner tone="success" text={result ? `Trạng thái: ${result}` : ""} compact />
                   <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
-                    {busy ? "Submitting..." : "Reset password"}
+                    {busy ? "Đang gửi..." : "Đặt lại mật khẩu"}
                   </button>
                 </form>
                 <hr />
                 <div className="text-center">
                   <button type="button" className="btn btn-link small" onClick={() => navigate("/login")}>
-                    Back to login
+                    Quay lại đăng nhập
                   </button>
                 </div>
               </div>

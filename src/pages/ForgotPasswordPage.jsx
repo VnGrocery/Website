@@ -44,12 +44,12 @@ export default function ForgotPasswordPage({ session }) {
             <div className="card shadow-lg my-5">
               <div className="card-body p-5">
                 <div className="text-center">
-                  <h1 className="h4 text-gray-900 mb-2">Forgot Password</h1>
-                  <p className="mb-4">Yêu cầu reset token từ backend.</p>
+                  <h1 className="h4 text-gray-900 mb-2">Quên mật khẩu</h1>
+                  <p className="mb-4">Gửi yêu cầu lấy mã đặt lại mật khẩu từ backend.</p>
                 </div>
                 <form onSubmit={handleSubmit}>
                   <div className="form-group">
-                    <label>API base URL</label>
+                    <label>Địa chỉ API gốc</label>
                     <input className="form-control" value={apiBaseUrl} onChange={(event) => setApiBaseUrl(event.target.value)} required />
                   </div>
                   <div className="form-group">
@@ -60,23 +60,23 @@ export default function ForgotPasswordPage({ session }) {
                   {result ? (
                     <AlertBanner
                       tone="success"
-                      text={`Status: ${result.status}${result.resetToken ? ` | Reset token: ${result.resetToken}` : ""}`}
+                      text={`Trạng thái: ${result.status}${result.resetToken ? ` | Mã đặt lại: ${result.resetToken}` : ""}`}
                       compact
                     />
                   ) : null}
                   <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
-                    {busy ? "Submitting..." : "Request reset"}
+                    {busy ? "Đang gửi..." : "Yêu cầu đặt lại"}
                   </button>
                 </form>
                 <hr />
                 <div className="text-center">
                   <button type="button" className="btn btn-link small" onClick={() => navigate("/reset-password")}>
-                    Go to reset page
+                    Sang trang đặt lại mật khẩu
                   </button>
                 </div>
                 <div className="text-center">
                   <button type="button" className="btn btn-link small" onClick={() => navigate("/login")}>
-                    Back to login
+                    Quay lại đăng nhập
                   </button>
                 </div>
               </div>

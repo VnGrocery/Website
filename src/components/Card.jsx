@@ -5,7 +5,7 @@ export default function Card({ title, loading = false, actions = null, children 
         <h6 className="m-0 font-weight-bold text-primary">{title}</h6>
         <div className="d-flex align-items-center">
           {actions}
-          {loading ? <span className="badge badge-light ml-2">Loading</span> : null}
+          {loading ? <span className="badge badge-light ml-2">Đang tải</span> : null}
         </div>
       </div>
       <div className="card-body">{children}</div>
