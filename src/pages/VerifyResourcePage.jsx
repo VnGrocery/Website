@@ -40,7 +40,12 @@ export default function VerifyResourcePage() {
 
   return (
     <>
-      <PageHeader title="Kiểm tra theo mục" subtitle="Kiểm tra toàn bộ lịch sử thay đổi của một mục dữ liệu" />
+      <PageHeader
+        title="Kiểm tra theo mục"
+        subtitle="Kiểm tra toàn bộ lịch sử thay đổi của một mục dữ liệu"
+        showBack
+        backTo="/events"
+      />
       <AlertBanner tone="danger" text={state.error} />
 
       <div className="row">

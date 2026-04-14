@@ -28,6 +28,9 @@ export default function Layout() {
     ],
     [alerts.highRiskChecks, alerts.pendingReports],
   );
+  const currentNavLabel =
+    navItems.find((item) => location.pathname === item.to || (item.to !== "/" && location.pathname.startsWith(item.to)))?.label ||
+    "Trang quản trị";
 
   useEffect(() => {
     document.body.classList.toggle("sidebar-toggled", sidebarCollapsed);
@@ -142,11 +145,9 @@ export default function Layout() {
             >
               <i className="fa fa-bars" />
             </button>
-            <div className="mr-auto">
-              <div className="text-xs font-weight-bold text-primary text-uppercase mb-1">Bảng điều hành</div>
-              <div className="h5 mb-0 text-gray-800">
-                {location.pathname.startsWith("/events") ? "Kiểm tra lịch sử dữ liệu" : "Trang quản trị"}
-              </div>
+            <div className="mr-auto topbar-heading">
+              <div className="h6 mb-0 font-weight-bold text-gray-800">{currentNavLabel}</div>
+              <div className="small text-muted">VNGrocery Admin</div>
             </div>
             <div className="ml-auto d-flex align-items-center topbar-user-block">
               <span className="badge badge-primary badge-pill px-3 py-2 mr-3">API: {session.apiBaseUrl}</span>

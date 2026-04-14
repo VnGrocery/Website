@@ -33,7 +33,12 @@ export default function VerifyEventPage() {
 
   return (
     <>
-      <PageHeader title={`Kiểm tra thay đổi ${eventId}`} subtitle="Xem chi tiết độ tin cậy của một thay đổi đã ghi nhận" />
+      <PageHeader
+        title={`Kiểm tra thay đổi ${eventId}`}
+        subtitle="Xem chi tiết độ tin cậy của một thay đổi đã ghi nhận"
+        showBack
+        backTo="/events"
+      />
       <AlertBanner tone="danger" text={state.error} />
 
       <div className="row">

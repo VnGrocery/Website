@@ -48,6 +48,15 @@ body {
   min-width: 0;
 }
 
+.page-back-button {
+  border-radius: 999px;
+  padding-inline: 0.85rem;
+}
+
+.topbar-heading {
+  min-width: 0;
+}
+
 .toast-stack-react {
   position: fixed;
   right: 1rem;

@@ -261,7 +261,12 @@ export default function ShopDetailPage() {
 
   return (
     <>
-      <PageHeader title={state.shop?.name || shopId} subtitle="Xem và duyệt cửa hàng, sản phẩm, đánh giá và dữ liệu đối chiếu" />
+      <PageHeader
+        title={state.shop?.name || shopId}
+        subtitle="Xem và duyệt cửa hàng, sản phẩm, đánh giá và dữ liệu đối chiếu"
+        showBack
+        backTo="/shops"
+      />
       {!isAdmin ? <AlertBanner tone="info" text="Tài khoản hiện tại chỉ có quyền xem, không có quyền duyệt." /> : null}
       <AlertBanner tone="danger" text={state.error} />
 
