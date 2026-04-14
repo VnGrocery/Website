@@ -283,7 +283,7 @@ export default function BuyerChecksPage() {
                           <button type="button" className="btn btn-outline-warning" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "flagged", "flagged due to risk signals")}>Gắn cờ</button>
                           <button type="button" className="btn btn-outline-danger" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "rejected", "rejected after moderation review")}>Từ chối</button>
                           <button type="button" className="btn btn-outline-success" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "completed", "confirmed after admin review")}>Hoàn tất</button>
-                          <Link className="btn btn-outline-primary" to={`/tools?buyerCheckId=${encodeURIComponent(item.checkId)}&expectedVersion=${item.version || 1}`}>Duyệt chi tiết</Link>
+                          <Link className="btn btn-outline-primary" to={`/tools?buyerCheckId=${encodeURIComponent(item.checkId)}&expectedVersion=${item.version || 1}`}>Mở công cụ nâng cao</Link>
                         </div>
                       </td>
                     </tr>

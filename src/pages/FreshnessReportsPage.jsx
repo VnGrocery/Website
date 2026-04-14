@@ -260,7 +260,7 @@ export default function FreshnessReportsPage() {
                           <button type="button" className="btn btn-outline-warning" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "flagged", "flagged after admin review")}>Gắn cờ</button>
                           <button type="button" className="btn btn-outline-danger" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "rejected", "rejected due to invalid or risky report")}>Từ chối</button>
                           <button type="button" className="btn btn-outline-success" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "active", "re-activated after verification")}>Kích hoạt</button>
-                          <Link className="btn btn-outline-primary" to={`/tools?reportId=${encodeURIComponent(item.reportId)}&reportExpectedVersion=${item.version || 1}`}>Duyệt chi tiết</Link>
+                          <Link className="btn btn-outline-primary" to={`/tools?reportId=${encodeURIComponent(item.reportId)}&reportExpectedVersion=${item.version || 1}`}>Mở công cụ nâng cao</Link>
                         </div>
                       </td>
                     </tr>

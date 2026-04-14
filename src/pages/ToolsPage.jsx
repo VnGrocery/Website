@@ -19,6 +19,13 @@ export default function ToolsPage() {
   const [reportForm, setReportForm] = useState({ reportId: "", expectedVersion: "", status: "flagged", moderationNote: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
+  const hasPrefilledInputs = Boolean(
+    searchParams.get("buyerCheckId") ||
+    searchParams.get("expectedVersion") ||
+    searchParams.get("status") ||
+    searchParams.get("reportId") ||
+    searchParams.get("reportExpectedVersion"),
+  );
 
   useEffect(() => {
     const checkId = searchParams.get("buyerCheckId");
@@ -73,16 +80,25 @@ export default function ToolsPage() {
 
   return (
     <>
-      <PageHeader title="Công cụ xử lý nhanh" subtitle="Xử lý trực tiếp khi đã có mã và phiên bản của dữ liệu" />
+      <PageHeader
+        title="Xử lý kỹ thuật (Nâng cao)"
+        subtitle="Màn kỹ thuật để cập nhật trực tiếp bằng mã tài nguyên và phiên bản"
+        showBack
+        backFallback="/"
+      />
       <AlertBanner
         tone="info"
         text={
           <>
-            Đã có danh sách chung cho các lượt kiểm tra của khách tại{" "}
-            <Link to="/buyer-checks">màn Lượt kiểm tra khách</Link>. Bạn có thể bấm “Duyệt nhanh” để điền sẵn mã và phiên bản tại đây.
+            Chỉ dùng cho admin kỹ thuật khi cần xử lý thủ công hoặc xử lý lỗi version conflict. Từ màn{" "}
+            <Link to="/buyer-checks">Lượt kiểm tra khách</Link> và <Link to="/freshness-reports">Báo cáo độ tươi</Link>,
+            bấm nút “Mở công cụ nâng cao” để tự điền sẵn mã và phiên bản.
           </>
         }
       />
+      {!hasPrefilledInputs ? (
+        <AlertBanner tone="info" text="Chưa có dữ liệu điền sẵn. Nên vào từ danh sách kiểm duyệt để giảm nhập tay và tránh sai mã." />
+      ) : null}
       {!isAdmin ? <AlertBanner tone="info" text="Tài khoản hiện tại chỉ có quyền xem, không có quyền duyệt." /> : null}
       <AlertBanner tone="danger" text={error} />
 

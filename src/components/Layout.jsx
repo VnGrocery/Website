@@ -24,12 +24,12 @@ export default function Layout() {
       { to: "/moderation-logs", label: "Lịch sử duyệt", icon: "history" },
       { to: "/events", label: "Lịch sử thay đổi", icon: "stream" },
       { to: "/account", label: "Tài khoản", icon: "user-cog" },
-      { to: "/tools", label: "Công cụ xử lý", icon: "shield-alt" },
     ],
     [alerts.highRiskChecks, alerts.pendingReports],
   );
   const currentNavLabel =
     navItems.find((item) => location.pathname === item.to || (item.to !== "/" && location.pathname.startsWith(item.to)))?.label ||
+    (location.pathname.startsWith("/tools") ? "Xử lý kỹ thuật" : "") ||
     "Trang quản trị";
 
   useEffect(() => {
