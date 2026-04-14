@@ -11,7 +11,8 @@ export default function Layout() {
   const { session, clearSession } = useSession();
   const [me, setMe] = useState(null);
   const [bootError, setBootError] = useState("");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.innerWidth < 768 : false));
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => (typeof window !== "undefined" ? window.innerWidth < 768 : false));
   const [alerts, setAlerts] = useState({ highRiskChecks: 0, pendingReports: 0 });
 
   const navItems = useMemo(
@@ -38,6 +39,27 @@ export default function Layout() {
       document.body.classList.remove("sidebar-toggled");
     };
   }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    function syncViewportFlags() {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setSidebarCollapsed(true);
+      }
+    }
+    syncViewportFlags();
+    window.addEventListener("resize", syncViewportFlags);
+    return () => {
+      window.removeEventListener("resize", syncViewportFlags);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarCollapsed(true);
+    }
+  }, [isMobile, location.pathname]);
 
   useEffect(() => {
     let active = true;
@@ -124,6 +146,11 @@ export default function Layout() {
               to={item.to}
               end={item.end}
               className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
+              onClick={() => {
+                if (isMobile) {
+                  setSidebarCollapsed(true);
+                }
+              }}
             >
               <i className={`fas fa-fw fa-${item.icon}`} />
               <span>{item.label}</span>
@@ -149,15 +176,15 @@ export default function Layout() {
               <div className="h6 mb-0 font-weight-bold text-gray-800">{currentNavLabel}</div>
               <div className="small text-muted">VNGrocery Admin</div>
             </div>
-            <div className="ml-auto d-flex align-items-center topbar-user-block">
-              <span className="badge badge-primary badge-pill px-3 py-2 mr-3">API: {session.apiBaseUrl}</span>
+            <div className="ml-auto d-flex align-items-center topbar-user-block flex-shrink-0">
+              <span className="badge badge-primary badge-pill px-3 py-2 mr-2 d-none d-sm-inline-block">API: {session.apiBaseUrl}</span>
               <div className="topbar-divider d-none d-sm-block" />
               <div className="nav-item dropdown no-arrow d-flex align-items-center">
                 <div className="mr-3 text-right d-none d-lg-inline">
                   <div className="small text-gray-500">Đang đăng nhập</div>
                   <div className="font-weight-bold text-gray-800">{me?.email || session.email || "admin"}</div>
                 </div>
-                <button type="button" className="btn btn-outline-primary btn-sm ml-3" onClick={logout}>
+                <button type="button" className="btn btn-outline-primary btn-sm ml-2 ml-sm-3 topbar-logout-button" onClick={logout}>
                   Đăng xuất
                 </button>
               </div>

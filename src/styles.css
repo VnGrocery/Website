@@ -57,6 +57,40 @@ body {
   min-width: 0;
 }
 
+.topbar-user-block {
+  min-width: 0;
+}
+
+.topbar-logout-button {
+  white-space: nowrap;
+}
+
+@media (max-width: 767.98px) {
+  #content .topbar {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .topbar-heading .h6 {
+    font-size: 0.95rem;
+    max-width: 28vw;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .topbar-heading .small {
+    display: none;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .topbar-logout-button {
+    padding: 0.2rem 0.55rem;
+    font-size: 0.72rem;
+  }
+}
+
 .toast-stack-react {
   position: fixed;
   right: 1rem;
