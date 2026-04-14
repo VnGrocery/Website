@@ -1,7 +1,7 @@
 export const shopStatuses = ["active", "pending", "flagged", "suspended", "archived"];
 export const productStatuses = ["active", "draft", "flagged", "suspended", "archived"];
 export const userRoles = ["buyer", "seller", "admin"];
-export const userStatuses = ["active", "pending", "suspended", "disabled"];
+export const userStatuses = ["active", "pending", "suspended", "deleted"];
 export const buyerCheckStatuses = ["completed", "flagged", "rejected"];
 export const reportStatuses = ["active", "flagged", "rejected"];
 
@@ -10,6 +10,7 @@ const labels = {
   pending: "Chờ duyệt",
   flagged: "Cần xem lại",
   suspended: "Tạm dừng",
+  deleted: "Đã xóa",
   archived: "Đã lưu",
   draft: "Chưa đăng",
   disabled: "Đã khóa",

@@ -5,6 +5,7 @@ import DataTable from "../components/DataTable.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { useApi } from "../lib/api.jsx";
+import { userStatuses } from "../lib/constants.js";
 import { formatDateTime, roundNumber } from "../lib/format.js";
 
 export default function DashboardPage() {
@@ -45,7 +46,7 @@ export default function DashboardPage() {
     };
   }, [api]);
 
-  const activeUsers = state.users.filter((item) => item.status === "active").length;
+  const activeUsers = state.users.filter((item) => normalizeUserStatus(item.status) === "active").length;
   const pendingShops = state.shops.filter((item) => item.status === "pending").length;
   const riskFlags = state.shops.filter((item) => (item.trustSummary?.highRiskCheckCount || 0) > 0).length;
   const anchored = state.shops.filter((item) => item.trustSummary?.latestPledgeId).length;
@@ -74,7 +75,7 @@ export default function DashboardPage() {
               rows={state.users.slice(0, 6).map((user) => [
                 user.email,
                 <StatusBadge key={`${user.userId}-role`} value={user.role} tone="secondary" />,
-                <StatusBadge key={`${user.userId}-status`} value={user.status} />,
+                <StatusBadge key={`${user.userId}-status`} value={normalizeUserStatus(user.status)} />,
                 formatDateTime(user.updatedAt),
               ])}
               emptyText="Không tìm thấy người dùng"
@@ -108,6 +109,14 @@ export default function DashboardPage() {
       </div>
     </>
   );
+}
+
+function normalizeUserStatus(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (userStatuses.includes(normalized)) {
+    return normalized;
+  }
+  return "active";
 }
 
 function MetricCard({ color, title, value, hint, icon }) {
