@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo } from "react";
 import { normalizeApiBase, useSession } from "./session.jsx";
 
 const ApiContext = createContext(null);
-const DEFAULT_TIMEOUT_MS = 15000;
+const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_RETRY_DELAY_MS = 400;
 const RETRYABLE_STATUSES = new Set([408, 425, 429, 502, 503, 504]);
 
@@ -42,7 +42,7 @@ export async function requestJson(url, options = {}) {
       return await requestJsonOnce(url, { ...options, timeoutMs });
     } catch (error) {
       lastError = error;
-      if (attempt >= retryCount || !shouldRetryRequest(error, options.method)) {
+      if (attempt >= retryCount || !shouldRetryRequest(error, options.method, options.retryUnsafe)) {
         throw error;
       }
       await wait(retryDelayMs * (attempt + 1));
@@ -84,7 +84,7 @@ async function requestJsonOnce(url, options = {}) {
     return payload;
   } catch (error) {
     if (error?.name === "AbortError") {
-      const timeoutError = new Error("Yeu cau qua thoi gian cho phep");
+      const timeoutError = new Error("Yeu cau qua thoi gian cho phep. Vui long thu lai sau it giay.");
       timeoutError.name = "TimeoutError";
       timeoutError.status = 408;
       throw timeoutError;
@@ -187,9 +187,10 @@ function normalizeErrorMessage(payload, fallback) {
   return fallback || "Request failed";
 }
 
-function shouldRetryRequest(error, method) {
+function shouldRetryRequest(error, method, retryUnsafe = false) {
   const normalizedMethod = String(method || "GET").toUpperCase();
-  if (!["GET", "HEAD", "OPTIONS"].includes(normalizedMethod)) {
+  const safeMethod = ["GET", "HEAD", "OPTIONS"].includes(normalizedMethod);
+  if (!safeMethod && !retryUnsafe) {
     return false;
   }
   if (!error) {

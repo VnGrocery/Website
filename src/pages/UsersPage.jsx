@@ -10,6 +10,8 @@ import { labelOf, userRoles, userStatuses } from "../lib/constants.js";
 import { formatDateTime } from "../lib/format.js";
 import { useSearchParams } from "react-router-dom";
 
+const USER_MUTATION_OPTIONS = { timeoutMs: 45000 };
+
 export default function UsersPage() {
   const api = useApi();
   const toast = useToast();
@@ -54,7 +56,7 @@ export default function UsersPage() {
 
     setState((current) => ({ ...current, busyKey: `${user.userId}:${path}`, error: "" }));
     try {
-      await api.patch(`/admin/users/${user.userId}/${path}`, body);
+      await api.patch(`/admin/users/${user.userId}/${path}`, body, USER_MUTATION_OPTIONS);
       await loadUsers();
       toast.success(successMessage);
       setState((current) => ({ ...current, busyKey: "" }));
@@ -76,7 +78,7 @@ export default function UsersPage() {
 
     setState((current) => ({ ...current, busyKey: `${user.userId}:${mode}`, error: "" }));
     try {
-      const result = await api.post(`/admin/users/${user.userId}/keys/${mode}`, { expectedVersion: user.version });
+      const result = await api.post(`/admin/users/${user.userId}/keys/${mode}`, { expectedVersion: user.version }, USER_MUTATION_OPTIONS);
       await loadUsers();
       setState((current) => ({ ...current, busyKey: "", keyResult: result }));
       toast.success(`Đã ${labelOf(mode).toLowerCase()} cho tài khoản`);

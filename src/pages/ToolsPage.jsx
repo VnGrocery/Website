@@ -7,6 +7,8 @@ import { useToast } from "../components/ToastStack.jsx";
 import { useApi } from "../lib/api.jsx";
 import { buyerCheckStatuses, labelOf, reportStatuses } from "../lib/constants.js";
 
+const MODERATION_REQUEST_OPTIONS = { timeoutMs: 45000, retryCount: 1, retryUnsafe: true };
+
 export default function ToolsPage() {
   const api = useApi();
   const toast = useToast();
@@ -145,7 +147,7 @@ async function patchBuyerCheckWithRetry(api, buyerForm) {
       expectedVersion: Number(buyerForm.expectedVersion),
       status: buyerForm.status,
       moderationNote: buyerForm.moderationNote,
-    });
+    }, MODERATION_REQUEST_OPTIONS);
   } catch (error) {
     if (!String(error.message || "").toLowerCase().includes("version conflict")) {
       throw error;
@@ -155,7 +157,7 @@ async function patchBuyerCheckWithRetry(api, buyerForm) {
       expectedVersion: Number(latestVersion || buyerForm.expectedVersion || 1),
       status: buyerForm.status,
       moderationNote: buyerForm.moderationNote,
-    });
+    }, MODERATION_REQUEST_OPTIONS);
   }
 }
 
@@ -165,7 +167,7 @@ async function patchReportWithRetry(api, reportForm) {
       expectedVersion: Number(reportForm.expectedVersion),
       status: reportForm.status,
       moderationNote: reportForm.moderationNote,
-    });
+    }, MODERATION_REQUEST_OPTIONS);
   } catch (error) {
     if (!String(error.message || "").toLowerCase().includes("version conflict")) {
       throw error;
@@ -175,17 +177,17 @@ async function patchReportWithRetry(api, reportForm) {
       expectedVersion: Number(latestVersion || reportForm.expectedVersion || 1),
       status: reportForm.status,
       moderationNote: reportForm.moderationNote,
-    });
+    }, MODERATION_REQUEST_OPTIONS);
   }
 }
 
 async function getLatestResourceVersion(api, resourceType, resourceId) {
   if (resourceType === "buyer_check") {
-    const response = await api.get("/admin/buyer-checks", { checkId: resourceId, page: 1, pageSize: 1 });
+    const response = await api.get("/admin/buyer-checks", { checkId: resourceId, page: 1, pageSize: 1 }, { timeoutMs: 45000, retryCount: 1 });
     return Number(response.items?.[0]?.version || 1);
   }
   if (resourceType === "product_freshness_report") {
-    const response = await api.get("/admin/product-freshness-reports", { reportId: resourceId, page: 1, pageSize: 1 });
+    const response = await api.get("/admin/product-freshness-reports", { reportId: resourceId, page: 1, pageSize: 1 }, { timeoutMs: 45000, retryCount: 1 });
     return Number(response.items?.[0]?.version || 1);
   }
   return 1;

@@ -11,7 +11,12 @@ import { useToast } from "../components/ToastStack.jsx";
 import { useApi } from "../lib/api.jsx";
 import { labelOf, productStatuses, reportStatuses, shopStatuses } from "../lib/constants.js";
 import { formatDateTime, roundNumber, shortText } from "../lib/format.js";
-import { localizeProofHeadline, localizeProofSummary } from "../lib/proofI18n.js";
+import { localizeProofAction, localizeProofHeadline, localizeProofSummary } from "../lib/proofI18n.js";
+
+const MODERATION_REQUEST_OPTIONS = { timeoutMs: 45000, retryCount: 1, retryUnsafe: true };
+const PROOF_REQUEST_OPTIONS = { timeoutMs: 30000, retryCount: 1 };
+const PROOF_AUTO_REFRESH_INTERVAL_MS = 5000;
+const PROOF_AUTO_REFRESH_WINDOW_MS = 90000;
 
 export default function ShopDetailPage() {
   const api = useApi();
@@ -31,6 +36,8 @@ export default function ShopDetailPage() {
     reportsByProduct: {},
     reviews: [],
     saving: "",
+    proofAutoRefreshPledgeId: "",
+    proofAutoRefreshUntil: 0,
   });
 
   async function loadShopDetail() {
@@ -112,7 +119,7 @@ export default function ShopDetailPage() {
         expectedVersion: state.shop.version,
         status,
         moderationNote,
-      });
+      }, MODERATION_REQUEST_OPTIONS);
       setState((current) => ({ ...current, saving: "", shop }));
       toast.success("Đã cập nhật kiểm duyệt cửa hàng");
     } catch (error) {
@@ -135,7 +142,7 @@ export default function ShopDetailPage() {
         expectedVersion: product.version,
         status,
         moderationNote,
-      });
+      }, MODERATION_REQUEST_OPTIONS);
       setState((current) => ({
         ...current,
         saving: "",
@@ -162,7 +169,7 @@ export default function ShopDetailPage() {
         expectedVersion: report.version,
         status,
         moderationNote,
-      });
+      }, MODERATION_REQUEST_OPTIONS);
       setState((current) => ({
         ...current,
         saving: "",
@@ -179,15 +186,46 @@ export default function ShopDetailPage() {
     }
   }
 
-  async function viewProof(pledgeId) {
-    setState((current) => ({ ...current, saving: `proof:${pledgeId}`, error: "" }));
+  async function viewProof(pledgeId, silent = false) {
+    if (!silent) {
+      setState((current) => ({ ...current, saving: `proof:${pledgeId}`, error: "" }));
+    }
     try {
-      const pledgeProof = await api.get(`/shops/${shopId}/pledges/${pledgeId}/proof`);
-      setState((current) => ({ ...current, saving: "", pledgeProof }));
+      const pledgeProof = await api.get(`/shops/${shopId}/pledges/${pledgeId}/proof`, undefined, PROOF_REQUEST_OPTIONS);
+      setState((current) => ({
+        ...current,
+        saving: silent ? current.saving : "",
+        pledgeProof,
+      }));
     } catch (error) {
-      setState((current) => ({ ...current, saving: "", error: error.message }));
+      setState((current) => ({
+        ...current,
+        saving: silent ? current.saving : "",
+        error: silent ? current.error : error.message,
+      }));
     }
   }
+
+  useEffect(() => {
+    const pledgeId = state.proofAutoRefreshPledgeId;
+    const until = Number(state.proofAutoRefreshUntil || 0);
+    if (!pledgeId || !until || Date.now() >= until) {
+      return;
+    }
+    const proof = state.pledgeProof;
+    if (!proof || proof.pledgeId !== pledgeId) {
+      return;
+    }
+    const status = String(proof.proofStatus || "").toLowerCase();
+    if (!["unknown", "pending"].includes(status)) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      viewProof(pledgeId, true);
+    }, PROOF_AUTO_REFRESH_INTERVAL_MS);
+    return () => window.clearTimeout(timer);
+  }, [state.proofAutoRefreshPledgeId, state.proofAutoRefreshUntil, state.pledgeProof?.pledgeId, state.pledgeProof?.proofStatus]);
 
   async function runIntegrityAction(pledge, mode) {
     const allowed = await confirm({
@@ -209,8 +247,13 @@ export default function ShopDetailPage() {
         ...current,
         saving: "",
         pledges: current.pledges.map((item) => (item.pledgeId === updated.pledgeId ? updated : item)),
+        proofAutoRefreshPledgeId: mode === "reanchor" ? updated.pledgeId : current.proofAutoRefreshPledgeId,
+        proofAutoRefreshUntil: mode === "reanchor" ? Date.now() + PROOF_AUTO_REFRESH_WINDOW_MS : current.proofAutoRefreshUntil,
       }));
       toast.success(`Đã ${labelOf(mode).toLowerCase()} cho cam kết`);
+      if (mode === "reanchor") {
+        viewProof(updated.pledgeId, true);
+      }
     } catch (error) {
       setState((current) => ({ ...current, saving: "", error: error.message }));
     }
@@ -356,9 +399,17 @@ export default function ShopDetailPage() {
                   <div className="small mb-1">Tình trạng dữ liệu: {state.pledgeProof.integrity?.integrityStatus || "Chưa có"}</div>
                   <div className="small mb-1">Tình trạng ghi nhận: {state.pledgeProof.integrity?.chainAnchorStatus || "Chưa có"}</div>
                   <div className="small mb-3">Lý do chưa khớp: {state.pledgeProof.integrity?.mismatchReason || "không có"}</div>
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary btn-sm mb-3"
+                    disabled={state.saving === `proof:${state.pledgeProof.pledgeId}`}
+                    onClick={() => viewProof(state.pledgeProof.pledgeId)}
+                  >
+                    {state.saving === `proof:${state.pledgeProof.pledgeId}` ? "Đang kiểm tra..." : "Kiểm tra lại ngay"}
+                  </button>
                   <div className="d-flex flex-wrap">
                     {(state.pledgeProof.recommendedActions || []).map((item) => (
-                      <span className="badge badge-light border mr-2 mb-2" key={item}>{item}</span>
+                      <span className="badge badge-light border mr-2 mb-2" key={item}>{localizeProofAction(item)}</span>
                     ))}
                   </div>
                 </div>

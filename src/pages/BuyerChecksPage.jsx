@@ -22,6 +22,7 @@ const defaultFilters = {
   createdBefore: "",
   page: "1",
 };
+const MODERATION_REQUEST_OPTIONS = { timeoutMs: 45000, retryCount: 1, retryUnsafe: true };
 
 export default function BuyerChecksPage() {
   const api = useApi();
@@ -313,18 +314,18 @@ async function patchBuyerCheckWithRetry(api, item, input) {
       expectedVersion: Number(item.version || 1),
       status: input.status,
       moderationNote: input.moderationNote || "",
-    });
+    }, MODERATION_REQUEST_OPTIONS);
   } catch (error) {
     if (!String(error.message || "").toLowerCase().includes("version conflict")) {
       throw error;
     }
-    const latest = await api.get("/admin/buyer-checks", { checkId: item.checkId, page: 1, pageSize: 1 });
+    const latest = await api.get("/admin/buyer-checks", { checkId: item.checkId, page: 1, pageSize: 1 }, { timeoutMs: 45000, retryCount: 1 });
     const latestVersion = latest.items?.[0]?.version || item.version || 1;
     return api.patch(`/admin/buyer-checks/${item.checkId}/moderation`, {
       expectedVersion: Number(latestVersion),
       status: input.status,
       moderationNote: input.moderationNote || "",
-    });
+    }, MODERATION_REQUEST_OPTIONS);
   }
 }
 

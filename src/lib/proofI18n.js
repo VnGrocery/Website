@@ -35,6 +35,19 @@ const summaryMap = new Map([
   ["hash duoc cung cap khong trung voi ban ghi pledge hien tai", "Hash được cung cấp không trùng với bản ghi pledge hiện tại."],
 ]);
 
+const actionMap = new Map([
+  ["show_warning", "Cảnh báo cần kiểm tra"],
+  ["contact_admin", "Liên hệ quản trị viên"],
+  ["consider_reanchor", "Cân nhắc ghi nhận lại"],
+  ["hide_trust_badge", "Ẩn nhãn tin cậy"],
+  ["show_revoked_state", "Hiển thị trạng thái đã thu hồi"],
+  ["show_pending_badge", "Đang đồng bộ blockchain"],
+  ["retry_later", "Thử lại sau ít giây"],
+  ["show_verified_badge", "Đã xác thực on-chain"],
+  ["show_neutral_state", "Chưa đủ bằng chứng on-chain, hệ thống sẽ tự kiểm tra lại"],
+  ["refresh_record", "Làm mới bản ghi để đối chiếu lại"],
+]);
+
 export function localizeProofHeadline(proof) {
   const text = proof?.proofHeadline;
   const normalized = normalize(text);
@@ -45,4 +58,9 @@ export function localizeProofSummary(proof) {
   const text = proof?.proofSummary;
   const normalized = normalize(text);
   return summaryMap.get(normalized) || text || "Chưa có";
+}
+
+export function localizeProofAction(action) {
+  const normalized = normalize(action);
+  return actionMap.get(normalized) || action || "Chưa có";
 }
