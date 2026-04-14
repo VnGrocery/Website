@@ -91,6 +91,29 @@ body {
   }
 }
 
+.pledge-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 0.85rem;
+}
+
+.proof-side-panel {
+  position: sticky;
+  top: 5.25rem;
+}
+
+@media (max-width: 991.98px) {
+  .proof-side-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .pledge-meta-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .toast-stack-react {
   position: fixed;
   right: 1rem;

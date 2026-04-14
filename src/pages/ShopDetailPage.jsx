@@ -371,55 +371,89 @@ export default function ShopDetailPage() {
         <div className="col-12 mb-4">
           <Card title="Cam kết và bằng chứng" loading={state.loading}>
             <div className="row">
-              {state.pledges.map((pledge) => (
-                <div className="col-lg-6 mb-4" key={pledge.pledgeId}>
-                  <div className="card border-left-info shadow h-100 py-2">
-                    <div className="card-body">
-                      <div className="d-flex justify-content-between align-items-start mb-2">
-                        <div className="font-weight-bold text-info text-uppercase small">{pledge.pledgeId}</div>
+              <div className="col-lg-7 mb-4 mb-lg-0">
+                {state.pledges.map((pledge) => (
+                  <div className="card border-left-info shadow-sm mb-3" key={pledge.pledgeId}>
+                    <div className="card-body py-3">
+                      <div className="d-flex justify-content-between align-items-start mb-3">
+                        <div className="pr-2">
+                          <div className="font-weight-bold text-info small break-all">{pledge.pledgeId}</div>
+                          <div className="small text-muted mt-1">Mã dữ liệu: {shortText(pledge.dataHash)}</div>
+                        </div>
                         <StatusBadge value={pledge.integrityStatus} />
                       </div>
-                      <div className="small mb-1">Danh mục: {pledge.category}</div>
-                      <div className="small mb-1">Điểm: {roundNumber(pledge.score)}</div>
-                      <div className="small mb-1">Đã ghi nhận: {pledge.chainAnchorStatus || "Chưa có"}</div>
-                      <div className="small mb-1">Tạo bởi: {pledge.createdByUserId}</div>
-                      <div className="small mb-3">Mã dữ liệu: {shortText(pledge.dataHash)}</div>
+
+                      <div className="pledge-meta-grid small mb-3">
+                        <div><span className="text-muted">Danh mục:</span> {pledge.category || "Không có"}</div>
+                        <div><span className="text-muted">Điểm:</span> {roundNumber(pledge.score)}</div>
+                        <div><span className="text-muted">Đã ghi nhận:</span> {pledge.chainAnchorStatus || "Chưa có"}</div>
+                        <div><span className="text-muted">Tạo bởi:</span> {shortText(pledge.createdByUserId)}</div>
+                      </div>
+
                       <div className="btn-group btn-group-sm flex-wrap">
-                        <button type="button" className="btn btn-outline-primary" onClick={() => viewProof(pledge.pledgeId)}>Xem bằng chứng</button>
-                        <button type="button" className="btn btn-outline-success" disabled={!isAdmin} onClick={() => runIntegrityAction(pledge, "reanchor")}>Ghi nhận lại</button>
-                        <button type="button" className="btn btn-outline-danger" disabled={!isAdmin} onClick={() => runIntegrityAction(pledge, "revoke")}>Hủy cam kết</button>
+                        <button
+                          type="button"
+                          className={`btn ${state.pledgeProof?.pledgeId === pledge.pledgeId ? "btn-primary" : "btn-outline-primary"}`}
+                          onClick={() => viewProof(pledge.pledgeId)}
+                        >
+                          {state.pledgeProof?.pledgeId === pledge.pledgeId ? "Đang xem bằng chứng" : "Xem bằng chứng"}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline-success"
+                          disabled={!isAdmin || state.saving === `reanchor:${pledge.pledgeId}`}
+                          onClick={() => runIntegrityAction(pledge, "reanchor")}
+                        >
+                          {state.saving === `reanchor:${pledge.pledgeId}` ? "Đang ghi nhận..." : "Ghi nhận lại"}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger"
+                          disabled={!isAdmin || state.saving === `revoke:${pledge.pledgeId}`}
+                          onClick={() => runIntegrityAction(pledge, "revoke")}
+                        >
+                          {state.saving === `revoke:${pledge.pledgeId}` ? "Đang hủy..." : "Hủy cam kết"}
+                        </button>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-            {!state.loading && !state.pledges.length ? <EmptyState text="Cửa hàng này chưa có lịch sử cam kết." /> : null}
+                ))}
+                {!state.loading && !state.pledges.length ? <EmptyState text="Cửa hàng này chưa có lịch sử cam kết." /> : null}
+              </div>
 
-            {state.pledgeProof ? (
-              <div className="card border-left-success shadow mt-3">
-                <div className="card-body">
-                  <h6 className="font-weight-bold text-success text-uppercase mb-2">{localizeProofHeadline(state.pledgeProof)}</h6>
-                  <p className="mb-3">{localizeProofSummary(state.pledgeProof)}</p>
-                  <div className="small mb-1">Tình trạng dữ liệu: {state.pledgeProof.integrity?.integrityStatus || "Chưa có"}</div>
-                  <div className="small mb-1">Tình trạng ghi nhận: {state.pledgeProof.integrity?.chainAnchorStatus || "Chưa có"}</div>
-                  <div className="small mb-3">Lý do chưa khớp: {state.pledgeProof.integrity?.mismatchReason || "không có"}</div>
-                  <button
-                    type="button"
-                    className="btn btn-outline-primary btn-sm mb-3"
-                    disabled={state.saving === `proof:${state.pledgeProof.pledgeId}`}
-                    onClick={() => viewProof(state.pledgeProof.pledgeId)}
-                  >
-                    {state.saving === `proof:${state.pledgeProof.pledgeId}` ? "Đang kiểm tra..." : "Kiểm tra lại ngay"}
-                  </button>
-                  <div className="d-flex flex-wrap">
-                    {(state.pledgeProof.recommendedActions || []).map((item) => (
-                      <span className="badge badge-light border mr-2 mb-2" key={item}>{localizeProofAction(item)}</span>
-                    ))}
-                  </div>
+              <div className="col-lg-5">
+                <div className="proof-side-panel">
+                  {state.pledgeProof ? (
+                    <div className="card border-left-success shadow-sm">
+                      <div className="card-body py-3">
+                        <h6 className="font-weight-bold text-success text-uppercase mb-2">{localizeProofHeadline(state.pledgeProof)}</h6>
+                        <p className="mb-3">{localizeProofSummary(state.pledgeProof)}</p>
+                        <div className="small mb-1">Tình trạng dữ liệu: {state.pledgeProof.integrity?.integrityStatus || "Chưa có"}</div>
+                        <div className="small mb-1">Tình trạng ghi nhận: {state.pledgeProof.integrity?.chainAnchorStatus || "Chưa có"}</div>
+                        <div className="small mb-3">Lý do chưa khớp: {state.pledgeProof.integrity?.mismatchReason || "không có"}</div>
+                        <button
+                          type="button"
+                          className="btn btn-outline-primary btn-sm mb-3"
+                          disabled={state.saving === `proof:${state.pledgeProof.pledgeId}`}
+                          onClick={() => viewProof(state.pledgeProof.pledgeId)}
+                        >
+                          {state.saving === `proof:${state.pledgeProof.pledgeId}` ? "Đang kiểm tra..." : "Kiểm tra lại ngay"}
+                        </button>
+                        <div className="d-flex flex-wrap">
+                          {(state.pledgeProof.recommendedActions || []).map((item) => (
+                            <span className="badge badge-light border mr-2 mb-2" key={item}>{localizeProofAction(item)}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border rounded bg-light p-3 small text-muted">
+                      Chọn một cam kết ở bên trái để xem bằng chứng và trạng thái xác thực.
+                    </div>
+                  )}
                 </div>
               </div>
-            ) : null}
+            </div>
           </Card>
         </div>
       </div>
