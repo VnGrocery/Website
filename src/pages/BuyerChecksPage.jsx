@@ -15,6 +15,7 @@ const defaultFilters = {
   checkId: "",
   buyerUserId: "",
   shopId: "",
+  bundleId: "",
   productId: "",
   status: "",
   verdict: "",
@@ -41,6 +42,7 @@ export default function BuyerChecksPage() {
         const response = await api.get("/admin/buyer-checks", {
           checkId: filters.checkId,
           shopId: filters.shopId,
+          bundleId: filters.bundleId,
           productId: filters.productId,
           buyerUserId: filters.buyerUserId,
           status: filters.status,
@@ -74,7 +76,7 @@ export default function BuyerChecksPage() {
       active = false;
       clearInterval(timer);
     };
-  }, [api, filters.checkId, filters.shopId, filters.productId, filters.buyerUserId, filters.status, filters.verdict, filters.createdAfter, filters.createdBefore, filters.page]);
+  }, [api, filters.checkId, filters.shopId, filters.bundleId, filters.productId, filters.buyerUserId, filters.status, filters.verdict, filters.createdAfter, filters.createdBefore, filters.page]);
 
   async function moderateOne(item, status, moderationNote) {
     setState((current) => ({ ...current, applying: true, error: "" }));
@@ -143,10 +145,11 @@ export default function BuyerChecksPage() {
               onClick={() =>
                 downloadCsv(
                   `buyer-checks-page-${filters.page || "1"}.csv`,
-                  ["checkId", "shopId", "productId", "buyerUserId", "status", "verdict", "trusted", "actualScore", "pledgedScore", "scoreDeltaAbs", "reasons", "createdAt"],
+                  ["checkId", "shopId", "bundleId", "productId", "buyerUserId", "status", "verdict", "trusted", "actualScore", "pledgedScore", "scoreDeltaAbs", "reasons", "createdAt"],
                   state.items.map((item) => [
                     item.checkId,
                     item.shopId,
+                    item.bundleId,
                     item.productId,
                     item.buyerUserId,
                     item.status,
@@ -179,6 +182,7 @@ export default function BuyerChecksPage() {
               <FilterInput label="Mã check" value={filters.checkId} onChange={(checkId) => setSearchParams(compactQuery({ ...filters, checkId, page: "1" }))} />
               <FilterInput label="Người mua" value={filters.buyerUserId} onChange={(buyerUserId) => setSearchParams(compactQuery({ ...filters, buyerUserId, page: "1" }))} />
               <FilterInput label="Cửa hàng" value={filters.shopId} onChange={(shopId) => setSearchParams(compactQuery({ ...filters, shopId, page: "1" }))} />
+              <FilterInput label="Bundle" value={filters.bundleId} onChange={(bundleId) => setSearchParams(compactQuery({ ...filters, bundleId, page: "1" }))} />
               <FilterInput label="Sản phẩm" value={filters.productId} onChange={(productId) => setSearchParams(compactQuery({ ...filters, productId, page: "1" }))} />
             </div>
             <div className="form-row align-items-end">
@@ -248,6 +252,7 @@ export default function BuyerChecksPage() {
                     </th>
                     <th>Mã check</th>
                     <th>Liên kết</th>
+                    <th>Bundle</th>
                     <th>Kết luận</th>
                     <th>Điểm</th>
                     <th>Lý do</th>
@@ -267,6 +272,10 @@ export default function BuyerChecksPage() {
                         {item.shopId ? <Link to={`/shops/${item.shopId}`}>Shop</Link> : "-"}
                         {item.pledgeId && item.shopId ? <div className="small"><Link to={`/shops/${item.shopId}?focusPledgeId=${encodeURIComponent(item.pledgeId)}`}>Proof</Link></div> : null}
                         <div className="small text-muted">product: {item.productId || "-"}</div>
+                      </td>
+                      <td>
+                        <div className="small font-weight-bold">{item.bundleId || "-"}</div>
+                        <div className="small text-muted">location: {item.locationStatus || "-"}</div>
                       </td>
                       <td>
                         <StatusBadge value={item.status || "completed"} />
@@ -289,7 +298,7 @@ export default function BuyerChecksPage() {
                     </tr>
                   ))}
                   {!state.loading && !state.items.length ? (
-                    <tr><td colSpan="8" className="text-center text-muted py-4">Chưa có lượt kiểm tra nào phù hợp bộ lọc.</td></tr>
+                    <tr><td colSpan="9" className="text-center text-muted py-4">Chưa có lượt kiểm tra nào phù hợp bộ lọc.</td></tr>
                   ) : null}
                 </tbody>
               </table>
