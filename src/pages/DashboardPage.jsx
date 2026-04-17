@@ -3,6 +3,7 @@ import AlertBanner from "../components/AlertBanner.jsx";
 import Card from "../components/Card.jsx";
 import DataTable from "../components/DataTable.jsx";
 import PageHeader from "../components/PageHeader.jsx";
+import { SkeletonBars, SkeletonMetricCards, SkeletonTable } from "../components/Skeleton.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { useApi } from "../lib/api.jsx";
 import { userStatuses } from "../lib/constants.js";
@@ -59,51 +60,65 @@ export default function DashboardPage() {
       <AlertBanner tone="danger" text={state.error} />
 
       <div className="row">
-        <MetricCard color="primary" title="Người dùng" value={state.users.length} hint={`${activeUsers} đang hoạt động`} icon="users" />
-        <MetricCard color="success" title="Cửa hàng" value={state.shops.length} hint={`${pendingShops} đang chờ duyệt`} icon="store" />
-        <MetricCard color="warning" title="Cần xem lại" value={riskFlags} hint="Có lượt kiểm tra rủi ro cao" icon="exclamation-triangle" />
-        <MetricCard color="info" title="Có cam kết" value={anchored} hint="Cửa hàng đã có dữ liệu đối chiếu" icon="link" />
-        <MetricCard color="danger" title="Buyer check rủi ro cao" value={state.highRiskChecks.length} hint="Cần ưu tiên xử lý" icon="shield-alt" />
-        <MetricCard color="secondary" title="Freshness report chờ duyệt" value={state.pendingReports.length} hint="Đang ở trạng thái active" icon="vial" />
+        {state.loading ? (
+          <SkeletonMetricCards count={6} />
+        ) : (
+          <>
+            <MetricCard color="primary" title="Người dùng" value={state.users.length} hint={`${activeUsers} đang hoạt động`} icon="users" />
+            <MetricCard color="success" title="Cửa hàng" value={state.shops.length} hint={`${pendingShops} đang chờ duyệt`} icon="store" />
+            <MetricCard color="warning" title="Cần xem lại" value={riskFlags} hint="Có lượt kiểm tra rủi ro cao" icon="exclamation-triangle" />
+            <MetricCard color="info" title="Có cam kết" value={anchored} hint="Cửa hàng đã có dữ liệu đối chiếu" icon="link" />
+            <MetricCard color="danger" title="Buyer check rủi ro cao" value={state.highRiskChecks.length} hint="Cần ưu tiên xử lý" icon="shield-alt" />
+            <MetricCard color="secondary" title="Freshness report chờ duyệt" value={state.pendingReports.length} hint="Đang ở trạng thái active" icon="vial" />
+          </>
+        )}
       </div>
 
       <div className="row">
         <div className="col-lg-6 mb-4">
           <Card title="Người dùng gần đây" loading={state.loading}>
-            <DataTable
-              columns={["Email", "Vai trò", "Trạng thái", "Cập nhật"]}
-              rows={state.users.slice(0, 6).map((user) => [
-                user.email,
-                <StatusBadge key={`${user.userId}-role`} value={user.role} tone="secondary" />,
-                <StatusBadge key={`${user.userId}-status`} value={normalizeUserStatus(user.status)} />,
-                formatDateTime(user.updatedAt),
-              ])}
-              emptyText="Không tìm thấy người dùng"
-            />
+            {state.loading ? (
+              <SkeletonTable columns={4} rows={6} />
+            ) : (
+              <DataTable
+                columns={["Email", "Vai trò", "Trạng thái", "Cập nhật"]}
+                rows={state.users.slice(0, 6).map((user) => [
+                  user.email,
+                  <StatusBadge key={`${user.userId}-role`} value={user.role} tone="secondary" />,
+                  <StatusBadge key={`${user.userId}-status`} value={normalizeUserStatus(user.status)} />,
+                  formatDateTime(user.updatedAt),
+                ])}
+                emptyText="Không tìm thấy người dùng"
+              />
+            )}
           </Card>
         </div>
         <div className="col-lg-6 mb-4">
           <Card title="Cửa hàng cần chú ý" loading={state.loading}>
-            <DataTable
-              columns={["Cửa hàng", "Trạng thái", "Mức tin cậy", "Rủi ro"]}
-              rows={state.shops.slice(0, 6).map((shop) => [
-                shop.name,
-                <StatusBadge key={`${shop.shopId}-status`} value={shop.status} />,
-                `${roundNumber(shop.trustSummary?.score)} / ${shop.trustSummary?.grade || "Chưa có"}`,
-                `${shop.trustSummary?.highRiskCheckCount || 0} lượt`,
-              ])}
-              emptyText="Không tìm thấy cửa hàng"
-            />
+            {state.loading ? (
+              <SkeletonTable columns={4} rows={6} />
+            ) : (
+              <DataTable
+                columns={["Cửa hàng", "Trạng thái", "Mức tin cậy", "Rủi ro"]}
+                rows={state.shops.slice(0, 6).map((shop) => [
+                  shop.name,
+                  <StatusBadge key={`${shop.shopId}-status`} value={shop.status} />,
+                  `${roundNumber(shop.trustSummary?.score)} / ${shop.trustSummary?.grade || "Chưa có"}`,
+                  `${shop.trustSummary?.highRiskCheckCount || 0} lượt`,
+                ])}
+                emptyText="Không tìm thấy cửa hàng"
+              />
+            )}
           </Card>
         </div>
         <div className="col-lg-6 mb-4">
           <Card title="Xu hướng buyer check rủi ro cao (7 ngày)">
-            <TrendBars items={dailyCheckTrend} />
+            {state.loading ? <SkeletonBars count={7} /> : <TrendBars items={dailyCheckTrend} />}
           </Card>
         </div>
         <div className="col-lg-6 mb-4">
           <Card title="Xu hướng freshness report chờ duyệt (7 ngày)">
-            <TrendBars items={dailyReportTrend} />
+            {state.loading ? <SkeletonBars count={7} /> : <TrendBars items={dailyReportTrend} />}
           </Card>
         </div>
       </div>

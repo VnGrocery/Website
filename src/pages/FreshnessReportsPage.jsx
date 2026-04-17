@@ -4,6 +4,7 @@ import AlertBanner from "../components/AlertBanner.jsx";
 import Card from "../components/Card.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import PaginationBar from "../components/PaginationBar.jsx";
+import { SkeletonBlock } from "../components/Skeleton.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { useApi } from "../lib/api.jsx";
 import { labelOf, reportStatuses } from "../lib/constants.js";
@@ -237,34 +238,38 @@ export default function FreshnessReportsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {state.items.map((item) => (
-                    <tr key={item.reportId}>
-                      <td><input type="checkbox" checked={state.selected.includes(item.reportId)} onChange={() => toggleSelected(item.reportId)} /></td>
-                      <td>
-                        <div className="font-weight-bold">{item.reportId}</div>
-                        <div className="small text-muted">user: {item.reporterUserId || "-"}</div>
-                      </td>
-                      <td>
-                        {item.shopId ? <Link to={`/shops/${item.shopId}`}>Shop</Link> : "-"}
-                        <div className="small text-muted">product: {item.productId || "-"}</div>
-                      </td>
-                      <td><StatusBadge value={item.status || "active"} /></td>
-                      <td>
-                        {roundNumber(item.score)}
-                        <div className="small text-muted">{item.category || "-"}, conf {roundNumber(item.confidence)}</div>
-                      </td>
-                      <td>{item.comment || "Không có"}</td>
-                      <td>{formatDateTime(item.updatedAt || item.createdAt)}</td>
-                      <td>
-                        <div className="btn-group btn-group-sm flex-wrap">
-                          <button type="button" className="btn btn-outline-warning" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "flagged", "flagged after admin review")}>Gắn cờ</button>
-                          <button type="button" className="btn btn-outline-danger" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "rejected", "rejected due to invalid or risky report")}>Từ chối</button>
-                          <button type="button" className="btn btn-outline-success" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "active", "re-activated after verification")}>Kích hoạt</button>
-                          <Link className="btn btn-outline-primary" to={`/tools?reportId=${encodeURIComponent(item.reportId)}&reportExpectedVersion=${item.version || 1}`}>Mở công cụ nâng cao</Link>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {state.loading ? (
+                    <LoadingRows columns={8} rows={8} />
+                  ) : (
+                    state.items.map((item) => (
+                      <tr key={item.reportId}>
+                        <td><input type="checkbox" checked={state.selected.includes(item.reportId)} onChange={() => toggleSelected(item.reportId)} /></td>
+                        <td>
+                          <div className="font-weight-bold">{item.reportId}</div>
+                          <div className="small text-muted">user: {item.reporterUserId || "-"}</div>
+                        </td>
+                        <td>
+                          {item.shopId ? <Link to={`/shops/${item.shopId}`}>Shop</Link> : "-"}
+                          <div className="small text-muted">product: {item.productId || "-"}</div>
+                        </td>
+                        <td><StatusBadge value={item.status || "active"} /></td>
+                        <td>
+                          {roundNumber(item.score)}
+                          <div className="small text-muted">{item.category || "-"}, conf {roundNumber(item.confidence)}</div>
+                        </td>
+                        <td>{item.comment || "Không có"}</td>
+                        <td>{formatDateTime(item.updatedAt || item.createdAt)}</td>
+                        <td>
+                          <div className="btn-group btn-group-sm flex-wrap">
+                            <button type="button" className="btn btn-outline-warning" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "flagged", "flagged after admin review")}>Gắn cờ</button>
+                            <button type="button" className="btn btn-outline-danger" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "rejected", "rejected due to invalid or risky report")}>Từ chối</button>
+                            <button type="button" className="btn btn-outline-success" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "active", "re-activated after verification")}>Kích hoạt</button>
+                            <Link className="btn btn-outline-primary" to={`/tools?reportId=${encodeURIComponent(item.reportId)}&reportExpectedVersion=${item.version || 1}`}>Mở công cụ nâng cao</Link>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                   {!state.loading && !state.items.length ? (
                     <tr><td colSpan="8" className="text-center text-muted py-4">Chưa có báo cáo nào phù hợp bộ lọc.</td></tr>
                   ) : null}
@@ -342,4 +347,16 @@ function describeModerationError(error) {
     return "Khong nhan duoc phan hoi tu server trong thoi gian cho phep.";
   }
   return error?.message || "Khong the xu ly yeu cau.";
+}
+
+function LoadingRows({ columns, rows }) {
+  return Array.from({ length: rows }, (_, rowIndex) => (
+    <tr key={`loading-row-${rowIndex}`}>
+      {Array.from({ length: columns }, (_, columnIndex) => (
+        <td key={`loading-cell-${rowIndex}-${columnIndex}`}>
+          <SkeletonBlock height={12} width={`${82 - ((rowIndex + columnIndex) % 3) * 12}%`} />
+        </td>
+      ))}
+    </tr>
+  ));
 }

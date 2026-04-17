@@ -3,6 +3,7 @@ import AlertBanner from "../components/AlertBanner.jsx";
 import Card from "../components/Card.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import PageHeader from "../components/PageHeader.jsx";
+import { SkeletonBlock } from "../components/Skeleton.jsx";
 import { useConfirm } from "../components/ConfirmDialog.jsx";
 import { useToast } from "../components/ToastStack.jsx";
 import { useApi } from "../lib/api.jsx";
@@ -135,47 +136,51 @@ export default function UsersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {state.items.map((user) => (
-                    <tr key={user.userId}>
-                      <td>
-                        <div className="font-weight-bold text-gray-900">{user.displayName || user.email}</div>
-                        <div className="small text-muted">{user.email}</div>
-                      </td>
-                      <td>
-                        <InlineSelectAction
-                          value={user.role}
-                          options={userRoles}
-                          buttonLabel="Cập nhật vai trò"
-                          busy={state.busyKey === `${user.userId}:role`}
-                          onSubmit={(value) => mutateUser(user, "role", { expectedVersion: user.version, role: value }, "Đã cập nhật vai trò")}
-                        />
-                      </td>
-                      <td>
-                        <InlineSelectAction
-                          value={user.status}
-                          options={userStatuses}
-                          buttonLabel="Cập nhật trạng thái"
-                          busy={state.busyKey === `${user.userId}:status`}
-                          onSubmit={(value) => mutateUser(user, "status", { expectedVersion: user.version, status: value }, "Đã cập nhật trạng thái")}
-                        />
-                      </td>
-                      <td>v{user.version}</td>
-                      <td>{formatDateTime(user.updatedAt)}</td>
-                      <td>
-                        <div className="btn-group-vertical btn-block">
-                          <button type="button" className="btn btn-outline-primary btn-sm mb-2" onClick={() => runKeyAction(user, "rotate")}>
-                            Đổi khóa mới
-                          </button>
-                          <button type="button" className="btn btn-outline-secondary btn-sm mb-2" onClick={() => runKeyAction(user, "recover")}>
-                            Khôi phục khóa
-                          </button>
-                          <button type="button" className="btn btn-outline-info btn-sm" onClick={() => runKeyAction(user, "backfill")}>
-                            Tạo khóa còn thiếu
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {state.loading ? (
+                    <LoadingRows columns={6} rows={6} />
+                  ) : (
+                    state.items.map((user) => (
+                      <tr key={user.userId}>
+                        <td>
+                          <div className="font-weight-bold text-gray-900">{user.displayName || user.email}</div>
+                          <div className="small text-muted">{user.email}</div>
+                        </td>
+                        <td>
+                          <InlineSelectAction
+                            value={user.role}
+                            options={userRoles}
+                            buttonLabel="Cập nhật vai trò"
+                            busy={state.busyKey === `${user.userId}:role`}
+                            onSubmit={(value) => mutateUser(user, "role", { expectedVersion: user.version, role: value }, "Đã cập nhật vai trò")}
+                          />
+                        </td>
+                        <td>
+                          <InlineSelectAction
+                            value={user.status}
+                            options={userStatuses}
+                            buttonLabel="Cập nhật trạng thái"
+                            busy={state.busyKey === `${user.userId}:status`}
+                            onSubmit={(value) => mutateUser(user, "status", { expectedVersion: user.version, status: value }, "Đã cập nhật trạng thái")}
+                          />
+                        </td>
+                        <td>v{user.version}</td>
+                        <td>{formatDateTime(user.updatedAt)}</td>
+                        <td>
+                          <div className="btn-group-vertical btn-block">
+                            <button type="button" className="btn btn-outline-primary btn-sm mb-2" onClick={() => runKeyAction(user, "rotate")}>
+                              Đổi khóa mới
+                            </button>
+                            <button type="button" className="btn btn-outline-secondary btn-sm mb-2" onClick={() => runKeyAction(user, "recover")}>
+                              Khôi phục khóa
+                            </button>
+                            <button type="button" className="btn btn-outline-info btn-sm" onClick={() => runKeyAction(user, "backfill")}>
+                              Tạo khóa còn thiếu
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
               {!state.loading && !state.items.length ? <EmptyState text="Không có người dùng phù hợp bộ lọc hiện tại." /> : null}
@@ -234,4 +239,16 @@ function Metric({ label, value, wide = false }) {
 
 function compactQuery(input) {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value));
+}
+
+function LoadingRows({ columns, rows }) {
+  return Array.from({ length: rows }, (_, rowIndex) => (
+    <tr key={`loading-row-${rowIndex}`}>
+      {Array.from({ length: columns }, (_, columnIndex) => (
+        <td key={`loading-cell-${rowIndex}-${columnIndex}`}>
+          <SkeletonBlock height={12} width={`${82 - ((rowIndex + columnIndex) % 3) * 12}%`} />
+        </td>
+      ))}
+    </tr>
+  ));
 }

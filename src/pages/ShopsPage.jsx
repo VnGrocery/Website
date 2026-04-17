@@ -5,6 +5,7 @@ import Card from "../components/Card.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import PaginationBar from "../components/PaginationBar.jsx";
+import { SkeletonShopCards } from "../components/Skeleton.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { useApi } from "../lib/api.jsx";
 import { labelOf, shopStatuses } from "../lib/constants.js";
@@ -116,27 +117,29 @@ export default function ShopsPage() {
         <div className="col-12">
           <Card title={`Cửa hàng (${state.total})`} loading={state.loading}>
             <div className="row">
-              {state.items.map((shop) => (
-                <div className="col-xl-4 col-md-6 mb-4" key={shop.shopId}>
-                  <div className="card border-left-primary shadow h-100 py-2">
-                    <div className="card-body">
-                      <div className="d-flex justify-content-between align-items-start mb-2">
-                        <div>
-                          <div className="text-xs font-weight-bold text-primary text-uppercase mb-1">{shop.name}</div>
-                          <div className="text-gray-800 small">{shop.address || "Không có địa chỉ"}</div>
+              {state.loading
+                ? <SkeletonShopCards count={6} />
+                : state.items.map((shop) => (
+                  <div className="col-xl-4 col-md-6 mb-4" key={shop.shopId}>
+                    <div className="card border-left-primary shadow h-100 py-2">
+                      <div className="card-body">
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                          <div>
+                            <div className="text-xs font-weight-bold text-primary text-uppercase mb-1">{shop.name}</div>
+                            <div className="text-gray-800 small">{shop.address || "Không có địa chỉ"}</div>
+                          </div>
+                          <StatusBadge value={shop.status} />
                         </div>
-                        <StatusBadge value={shop.status} />
+                        <div className="small mb-2">Chủ sở hữu: {shop.ownerUserId}</div>
+                        <div className="small mb-2">Mức tin cậy: {roundNumber(shop.trustSummary?.score)} / {shop.trustSummary?.grade || "Chưa có"}</div>
+                        <div className="small mb-3">Kiểm tra rủi ro cao: {shop.trustSummary?.highRiskCheckCount || 0}</div>
+                        <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate(`/shops/${shop.shopId}`)}>
+                          Mở chi tiết
+                        </button>
                       </div>
-                      <div className="small mb-2">Chủ sở hữu: {shop.ownerUserId}</div>
-                      <div className="small mb-2">Mức tin cậy: {roundNumber(shop.trustSummary?.score)} / {shop.trustSummary?.grade || "Chưa có"}</div>
-                      <div className="small mb-3">Kiểm tra rủi ro cao: {shop.trustSummary?.highRiskCheckCount || 0}</div>
-                      <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate(`/shops/${shop.shopId}`)}>
-                        Mở chi tiết
-                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
 
             {!state.loading && !state.items.length ? <EmptyState text="Không có cửa hàng phù hợp bộ lọc hiện tại." /> : null}

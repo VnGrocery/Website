@@ -4,6 +4,7 @@ import AlertBanner from "../components/AlertBanner.jsx";
 import Card from "../components/Card.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import PaginationBar from "../components/PaginationBar.jsx";
+import { SkeletonBlock } from "../components/Skeleton.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { useApi } from "../lib/api.jsx";
 import { buyerCheckStatuses, labelOf } from "../lib/constants.js";
@@ -261,42 +262,46 @@ export default function BuyerChecksPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {state.items.map((item) => (
-                    <tr key={item.checkId}>
-                      <td><input type="checkbox" checked={state.selected.includes(item.checkId)} onChange={() => toggleSelected(item.checkId)} /></td>
-                      <td>
-                        <div className="font-weight-bold">{item.checkId}</div>
-                        <div className="small text-muted">buyer: {item.buyerUserId || "-"}</div>
-                      </td>
-                      <td>
-                        {item.shopId ? <Link to={`/shops/${item.shopId}`}>Shop</Link> : "-"}
-                        {item.pledgeId && item.shopId ? <div className="small"><Link to={`/shops/${item.shopId}?focusPledgeId=${encodeURIComponent(item.pledgeId)}`}>Proof</Link></div> : null}
-                        <div className="small text-muted">product: {item.productId || "-"}</div>
-                      </td>
-                      <td>
-                        <div className="small font-weight-bold">{item.bundleId || "-"}</div>
-                        <div className="small text-muted">location: {item.locationStatus || "-"}</div>
-                      </td>
-                      <td>
-                        <StatusBadge value={item.status || "completed"} />
-                        <div className="small mt-1">{labelVerdict(item.verdict, item.trusted)}</div>
-                      </td>
-                      <td>
-                        {item.pledgeId ? `${roundNumber(item.actualScore)} / ${roundNumber(item.pledgedScore)}` : roundNumber(item.actualScore)}
-                        <div className="small text-muted">Δ {roundNumber(item.scoreDeltaAbs)}</div>
-                      </td>
-                      <td>{(item.reasons || []).join(", ") || "Không có"}</td>
-                      <td>{formatDateTime(item.updatedAt || item.createdAt)}</td>
-                      <td>
-                        <div className="btn-group btn-group-sm flex-wrap">
-                          <button type="button" className="btn btn-outline-warning" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "flagged", "flagged due to risk signals")}>Gắn cờ</button>
-                          <button type="button" className="btn btn-outline-danger" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "rejected", "rejected after moderation review")}>Từ chối</button>
-                          <button type="button" className="btn btn-outline-success" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "completed", "confirmed after admin review")}>Hoàn tất</button>
-                          <Link className="btn btn-outline-primary" to={`/tools?buyerCheckId=${encodeURIComponent(item.checkId)}&expectedVersion=${item.version || 1}`}>Mở công cụ nâng cao</Link>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {state.loading ? (
+                    <LoadingRows columns={9} rows={8} />
+                  ) : (
+                    state.items.map((item) => (
+                      <tr key={item.checkId}>
+                        <td><input type="checkbox" checked={state.selected.includes(item.checkId)} onChange={() => toggleSelected(item.checkId)} /></td>
+                        <td>
+                          <div className="font-weight-bold">{item.checkId}</div>
+                          <div className="small text-muted">buyer: {item.buyerUserId || "-"}</div>
+                        </td>
+                        <td>
+                          {item.shopId ? <Link to={`/shops/${item.shopId}`}>Shop</Link> : "-"}
+                          {item.pledgeId && item.shopId ? <div className="small"><Link to={`/shops/${item.shopId}?focusPledgeId=${encodeURIComponent(item.pledgeId)}`}>Proof</Link></div> : null}
+                          <div className="small text-muted">product: {item.productId || "-"}</div>
+                        </td>
+                        <td>
+                          <div className="small font-weight-bold">{item.bundleId || "-"}</div>
+                          <div className="small text-muted">location: {item.locationStatus || "-"}</div>
+                        </td>
+                        <td>
+                          <StatusBadge value={item.status || "completed"} />
+                          <div className="small mt-1">{labelVerdict(item.verdict, item.trusted)}</div>
+                        </td>
+                        <td>
+                          {item.pledgeId ? `${roundNumber(item.actualScore)} / ${roundNumber(item.pledgedScore)}` : roundNumber(item.actualScore)}
+                          <div className="small text-muted">Δ {roundNumber(item.scoreDeltaAbs)}</div>
+                        </td>
+                        <td>{(item.reasons || []).join(", ") || "Không có"}</td>
+                        <td>{formatDateTime(item.updatedAt || item.createdAt)}</td>
+                        <td>
+                          <div className="btn-group btn-group-sm flex-wrap">
+                            <button type="button" className="btn btn-outline-warning" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "flagged", "flagged due to risk signals")}>Gắn cờ</button>
+                            <button type="button" className="btn btn-outline-danger" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "rejected", "rejected after moderation review")}>Từ chối</button>
+                            <button type="button" className="btn btn-outline-success" disabled={!isAdmin || state.applying} onClick={() => moderateOne(item, "completed", "confirmed after admin review")}>Hoàn tất</button>
+                            <Link className="btn btn-outline-primary" to={`/tools?buyerCheckId=${encodeURIComponent(item.checkId)}&expectedVersion=${item.version || 1}`}>Mở công cụ nâng cao</Link>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                   {!state.loading && !state.items.length ? (
                     <tr><td colSpan="9" className="text-center text-muted py-4">Chưa có lượt kiểm tra nào phù hợp bộ lọc.</td></tr>
                   ) : null}
@@ -382,4 +387,16 @@ function describeModerationError(error) {
     return "Khong nhan duoc phan hoi tu server trong thoi gian cho phep.";
   }
   return error?.message || "Khong the xu ly yeu cau.";
+}
+
+function LoadingRows({ columns, rows }) {
+  return Array.from({ length: rows }, (_, rowIndex) => (
+    <tr key={`loading-row-${rowIndex}`}>
+      {Array.from({ length: columns }, (_, columnIndex) => (
+        <td key={`loading-cell-${rowIndex}-${columnIndex}`}>
+          <SkeletonBlock height={12} width={`${82 - ((rowIndex + columnIndex) % 3) * 12}%`} />
+        </td>
+      ))}
+    </tr>
+  ));
 }

@@ -4,6 +4,7 @@ import Card from "../components/Card.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import PaginationBar from "../components/PaginationBar.jsx";
+import { SkeletonBlock } from "../components/Skeleton.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { useApi } from "../lib/api.jsx";
 import { formatDateTime, fromDatetimeLocalInput, toDatetimeLocalInput } from "../lib/format.js";
@@ -102,22 +103,26 @@ export default function ModerationLogsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {state.items.map((event) => {
-                    const payload = safeParse(event.payloadJson);
-                    const note = payload?.after?.moderationNote || payload?.moderationNote || "";
-                    return (
-                      <tr key={event.eventId}>
-                        <td>{formatDateTime(event.createdAt)}</td>
-                        <td>{event.actorUserId}</td>
-                        <td>
-                          <div className="font-weight-bold">{event.resourceType}</div>
-                          <div className="small text-muted">{event.resourceId}</div>
-                        </td>
-                        <td><StatusBadge value={event.status} /></td>
-                        <td>{note || "(không có)"}</td>
-                      </tr>
-                    );
-                  })}
+                  {state.loading ? (
+                    <LoadingRows columns={5} rows={8} />
+                  ) : (
+                    state.items.map((event) => {
+                      const payload = safeParse(event.payloadJson);
+                      const note = payload?.after?.moderationNote || payload?.moderationNote || "";
+                      return (
+                        <tr key={event.eventId}>
+                          <td>{formatDateTime(event.createdAt)}</td>
+                          <td>{event.actorUserId}</td>
+                          <td>
+                            <div className="font-weight-bold">{event.resourceType}</div>
+                            <div className="small text-muted">{event.resourceId}</div>
+                          </td>
+                          <td><StatusBadge value={event.status} /></td>
+                          <td>{note || "(không có)"}</td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
               {!state.loading && !state.items.length ? <EmptyState text="Không có bản ghi moderation nào." /> : null}
@@ -161,4 +166,16 @@ function DateFilter({ label, value, onChange }) {
       <input className="form-control" type="datetime-local" value={toDatetimeLocalInput(value)} onChange={(event) => onChange(event.target.value)} />
     </div>
   );
+}
+
+function LoadingRows({ columns, rows }) {
+  return Array.from({ length: rows }, (_, rowIndex) => (
+    <tr key={`loading-row-${rowIndex}`}>
+      {Array.from({ length: columns }, (_, columnIndex) => (
+        <td key={`loading-cell-${rowIndex}-${columnIndex}`}>
+          <SkeletonBlock height={12} width={`${82 - ((rowIndex + columnIndex) % 3) * 12}%`} />
+        </td>
+      ))}
+    </tr>
+  ));
 }

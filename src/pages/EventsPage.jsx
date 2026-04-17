@@ -6,6 +6,7 @@ import EmptyState from "../components/EmptyState.jsx";
 import JsonViewer from "../components/JsonViewer.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import PaginationBar from "../components/PaginationBar.jsx";
+import { SkeletonBlock } from "../components/Skeleton.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { buildQuery, useApi } from "../lib/api.jsx";
 import { downloadCsv, downloadJson } from "../lib/export.js";
@@ -156,63 +157,67 @@ export default function EventsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {state.items.map((event) => (
-                    <Fragment key={event.eventId}>
-                      <tr key={event.eventId}>
-                        <td>
-                          <div className="font-weight-bold text-gray-900">{event.eventId}</div>
-                          <div className="small text-muted">{event.resourceType}:{event.resourceId}</div>
-                        </td>
-                        <td>{event.actorUserId}</td>
-                        <td>{event.action}</td>
-                        <td><StatusBadge value={event.status} /></td>
-                        <td>{event.sequence}</td>
-                        <td>{formatDateTime(event.createdAt)}</td>
-                        <td>
-                          <div className="btn-group btn-group-sm flex-wrap">
-                            <Link className="btn btn-outline-primary" to={`/events/${event.eventId}/verify`}>
-                              Kiểm tra mục này
-                            </Link>
-                            <Link
-                              className="btn btn-outline-secondary"
-                              to={`/events/verify?${buildQuery({ resourceType: event.resourceType, resourceId: event.resourceId })}`}
-                            >
-                              Kiểm tra theo mục
-                            </Link>
-                            <button
-                              type="button"
-                              className="btn btn-outline-info"
-                              onClick={() =>
-                                setState((current) => ({
-                                  ...current,
-                                  expandedEventId: current.expandedEventId === event.eventId ? "" : event.eventId,
-                                }))
-                              }
-                            >
-                              Nội dung
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      {state.expandedEventId === event.eventId ? (
-                        <tr key={`${event.eventId}-payload`}>
-                          <td colSpan="7">
-                            <div className="row">
-                              <div className="col-lg-6 mb-3">
-                                <div className="small text-muted mb-1">Mã xác nhận</div>
-                                <div className="text-monospace small break-all">{event.signature}</div>
-                              </div>
-                              <div className="col-lg-6 mb-3">
-                                <div className="small text-muted mb-1">Mã kiểm tra nội dung</div>
-                                <div className="text-monospace small break-all">{event.contentSha256}</div>
-                              </div>
+                  {state.loading ? (
+                    <LoadingRows columns={7} rows={8} />
+                  ) : (
+                    state.items.map((event) => (
+                      <Fragment key={event.eventId}>
+                        <tr key={event.eventId}>
+                          <td>
+                            <div className="font-weight-bold text-gray-900">{event.eventId}</div>
+                            <div className="small text-muted">{event.resourceType}:{event.resourceId}</div>
+                          </td>
+                          <td>{event.actorUserId}</td>
+                          <td>{event.action}</td>
+                          <td><StatusBadge value={event.status} /></td>
+                          <td>{event.sequence}</td>
+                          <td>{formatDateTime(event.createdAt)}</td>
+                          <td>
+                            <div className="btn-group btn-group-sm flex-wrap">
+                              <Link className="btn btn-outline-primary" to={`/events/${event.eventId}/verify`}>
+                                Kiểm tra mục này
+                              </Link>
+                              <Link
+                                className="btn btn-outline-secondary"
+                                to={`/events/verify?${buildQuery({ resourceType: event.resourceType, resourceId: event.resourceId })}`}
+                              >
+                                Kiểm tra theo mục
+                              </Link>
+                              <button
+                                type="button"
+                                className="btn btn-outline-info"
+                                onClick={() =>
+                                  setState((current) => ({
+                                    ...current,
+                                    expandedEventId: current.expandedEventId === event.eventId ? "" : event.eventId,
+                                  }))
+                                }
+                              >
+                                Nội dung
+                              </button>
                             </div>
-                            <JsonViewer value={event.payloadJson} />
                           </td>
                         </tr>
-                      ) : null}
-                    </Fragment>
-                  ))}
+                        {state.expandedEventId === event.eventId ? (
+                          <tr key={`${event.eventId}-payload`}>
+                            <td colSpan="7">
+                              <div className="row">
+                                <div className="col-lg-6 mb-3">
+                                  <div className="small text-muted mb-1">Mã xác nhận</div>
+                                  <div className="text-monospace small break-all">{event.signature}</div>
+                                </div>
+                                <div className="col-lg-6 mb-3">
+                                  <div className="small text-muted mb-1">Mã kiểm tra nội dung</div>
+                                  <div className="text-monospace small break-all">{event.contentSha256}</div>
+                                </div>
+                              </div>
+                              <JsonViewer value={event.payloadJson} />
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
+                    ))
+                  )}
                 </tbody>
               </table>
               {!state.loading && !state.items.length ? <EmptyState text="Không có thay đổi nào phù hợp với bộ lọc hiện tại." /> : null}
@@ -263,4 +268,16 @@ function DateFilter({ label, value, onChange }) {
       <input className="form-control" type="datetime-local" value={toDatetimeLocalInput(value)} onChange={(event) => onChange(event.target.value)} />
     </div>
   );
+}
+
+function LoadingRows({ columns, rows }) {
+  return Array.from({ length: rows }, (_, rowIndex) => (
+    <tr key={`loading-row-${rowIndex}`}>
+      {Array.from({ length: columns }, (_, columnIndex) => (
+        <td key={`loading-cell-${rowIndex}-${columnIndex}`}>
+          <SkeletonBlock height={12} width={`${82 - ((rowIndex + columnIndex) % 3) * 12}%`} />
+        </td>
+      ))}
+    </tr>
+  ));
 }
