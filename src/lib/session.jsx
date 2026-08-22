@@ -1,9 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 
+// 5050 is the host port docker-compose publishes the API on. 8080 on the same
+// host is the IPFS gateway, which answers requests but not these ones -- and
+// 5000 is taken by macOS AirPlay Receiver.
 export const DEFAULT_API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
-  `${window.location.protocol}//${window.location.hostname}:8080/v1`;
+  `${window.location.protocol}//${window.location.hostname}:5050/v1`;
 
 const SESSION_KEY = "vngrocery-admin-session";
 
